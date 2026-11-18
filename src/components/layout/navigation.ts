@@ -5,8 +5,9 @@ export type NavKey = keyof typeof en.nav
 
 export interface NavItem {
   key: NavKey
-  /** Placeholder paths. Routing is set up in Phase 2 (T2.8). */
   href: string
+  /** Match the path exactly (so "/reports" is not active on "/reports/new"). */
+  end?: boolean
   roles: readonly Role[]
 }
 
@@ -15,13 +16,13 @@ const STAFF: readonly Role[] = ['administrator', 'technician']
 const ADMIN: readonly Role[] = ['administrator']
 
 /**
- * Navigation follows the role table in requirements section 2. This only
- * controls what is shown; security rules and functions enforce access.
+ * Navigation and route access follow the role table in requirements section 2.
+ * This only controls what is shown; security rules and functions enforce access.
  */
 export const NAV_ITEMS: readonly NavItem[] = [
-  { key: 'home', href: '/', roles: ALL },
+  { key: 'home', href: '/', end: true, roles: ALL },
   { key: 'newReport', href: '/reports/new', roles: ALL },
-  { key: 'myReports', href: '/reports', roles: ALL },
+  { key: 'myReports', href: '/reports', end: true, roles: ALL },
   { key: 'waterPoints', href: '/water-points', roles: ALL },
   { key: 'incidents', href: '/incidents', roles: STAFF },
   { key: 'maintenance', href: '/maintenance', roles: STAFF },

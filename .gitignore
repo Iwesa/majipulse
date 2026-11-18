@@ -41,3 +41,7 @@ coverage
 test-results
 playwright-report
 playwright/.cache
+
+# Cloud Functions build output
+functions/lib
+*.tsbuildinfo

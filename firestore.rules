@@ -1,9 +1,331 @@
 rules_version = '2';
 
+// MajiPulse security rules. Default deny.
+//
+// Access needs BOTH verified custom claims { organizationId, role } AND an
+// active members/{uid} document that matches them (isMember). Claims and
+// member documents are written only by Admin SDK code, never by clients.
+//
+// Rules are not filters: list queries must constrain organizationId (and,
+// for reporters listing incidents, reporterId), or they are denied.
+//
+// Timestamps written by clients must be the server time (request.time),
+// which clients produce with serverTimestamp().
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
+
+    // ---------- Identity ----------
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function claims() {
+      return request.auth.token;
+    }
+
+    function hasOrgClaims() {
+      return signedIn()
+        && claims().get('organizationId', null) is string
+        && claims().get('role', null) in ['administrator', 'technician', 'reporter'];
+    }
+
+    function memberPath(uid) {
+      return /databases/$(database)/documents/members/$(uid);
+    }
+
+    // One billed read per request (the result is cached for the request).
+    function isMember() {
+      return hasOrgClaims() && memberMatchesClaims(get(memberPath(request.auth.uid)));
+    }
+
+    function memberMatchesClaims(member) {
+      return member != null
+        && member.data.active == true
+        && member.data.organizationId == claims().organizationId
+        && member.data.role == claims().role;
+    }
+
+    function orgId() {
+      return claims().organizationId;
+    }
+
+    function isStaff() {
+      return claims().role in ['administrator', 'technician'];
+    }
+
+    function isAdmin() {
+      return claims().role == 'administrator';
+    }
+
+    function inMyOrg(data) {
+      return data.organizationId == orgId();
+    }
+
+    // ---------- Field helpers ----------
+
+    function onlyChanged(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    function unchanged(key) {
+      return request.resource.data.get(key, null) == resource.data.get(key, null);
+    }
+
+    function text(value, min, max) {
+      return value is string && value.size() >= min && value.size() <= max;
+    }
+
+    function optionalText(data, key, min, max) {
+      return !(key in data) || text(data[key], min, max);
+    }
+
+    function optionalTimestamp(data, key) {
+      return !(key in data) || data[key] is timestamp;
+    }
+
+    function isUuid(value) {
+      return value is string
+        && value.matches('^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$');
+    }
+
+    // A single path segment, so client-supplied IDs cannot point elsewhere.
+    function isDocId(value) {
+      return value is string && value.size() >= 1 && value.size() <= 128 && !value.matches('.*/.*');
+    }
+
+    function docIn(collectionName, id) {
+      return get(/databases/$(database)/documents/$(collectionName)/$(id));
+    }
+
+    function waterPointInMyOrg(id) {
+      return isDocId(id) && docIn('waterPoints', id) != null && docIn('waterPoints', id).data.organizationId == orgId();
+    }
+
+    // ---------- organizations / members (Admin SDK writes only) ----------
+
+    match /organizations/{organizationId} {
+      allow get: if isMember() && organizationId == orgId();
+      allow list, write: if false;
+    }
+
+    match /members/{uid} {
+      // Users may read their own record (to see "setup incomplete" or
+      // "inactive"); administrators read their organization's records.
+      allow get: if (signedIn() && uid == request.auth.uid)
+        || (isMember() && isAdmin() && inMyOrg(resource.data));
+      allow list: if isMember() && isAdmin() && inMyOrg(resource.data);
+      allow write: if false;
+    }
+
+    // ---------- waterPoints ----------
+
+    function waterPointFields(d) {
+      return d.keys().hasAll(['organizationId', 'name', 'type', 'locationDescription', 'status', 'demo',
+          'createdBy', 'createdAt', 'updatedAt'])
+        && d.keys().hasOnly(['organizationId', 'name', 'type', 'locationDescription', 'ward', 'status', 'demo',
+          'createdBy', 'createdAt', 'updatedAt'])
+        && text(d.name, 1, 120)
+        && d.type in ['borehole', 'handpump', 'kiosk', 'tap', 'other']
+        && text(d.locationDescription, 1, 500)
+        && optionalText(d, 'ward', 1, 80)
+        && d.status in ['working', 'needs_repair', 'not_working', 'unknown']
+        && d.demo is bool
+        && d.createdAt is timestamp
+        && d.updatedAt == request.time;
+    }
+
+    match /waterPoints/{waterPointId} {
+      allow get, list: if isMember() && inMyOrg(resource.data);
+
+      allow create: if isMember() && isStaff()
+        && waterPointFields(request.resource.data)
+        && inMyOrg(request.resource.data)
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.demo == false;
+
+      allow update: if isMember() && isStaff()
+        && inMyOrg(resource.data)
+        && waterPointFields(request.resource.data)
+        && unchanged('organizationId') && unchanged('createdBy') && unchanged('createdAt') && unchanged('demo');
+
+      allow delete: if false;
+    }
+
+    // ---------- incidents ----------
+
+    function incidentContent(d) {
+      return d.keys().hasAll(['organizationId', 'waterPointId', 'reporterId', 'demo', 'description',
+          'incidentType', 'severity', 'status', 'baseRevision', 'clientRevision', 'mutationId',
+          'serverRevision', 'clientCreatedAt', 'createdAt', 'updatedAt', 'confirmedFields'])
+        && d.keys().hasOnly(['organizationId', 'waterPointId', 'reporterId', 'demo', 'description',
+          'incidentType', 'severity', 'occurredAt', 'locationNote', 'status', 'lastStatusChange',
+          'baseRevision', 'clientRevision', 'mutationId', 'serverRevision', 'clientCreatedAt',
+          'createdAt', 'updatedAt', 'ai', 'confirmedFields'])
+        && text(d.description, 1, 2000)
+        && d.incidentType in ['no_water', 'low_flow', 'leak', 'water_quality_concern', 'pump_or_equipment_issue', 'other']
+        && (d.severity == null || d.severity in ['low', 'medium', 'high'])
+        && optionalTimestamp(d, 'occurredAt')
+        && optionalText(d, 'locationNote', 1, 300)
+        && d.baseRevision is int && d.baseRevision >= 0
+        && d.clientRevision is int && d.clientRevision >= 1
+        && isUuid(d.mutationId)
+        && d.serverRevision is int
+        && d.clientCreatedAt is timestamp
+        && d.createdAt is timestamp
+        && d.confirmedFields is list && d.confirmedFields.size() <= 4
+        && d.confirmedFields.hasOnly(['incidentType', 'severity', 'occurredAt', 'locationNote'])
+        && (!('ai' in d) || validAi(d.ai))
+        && d.demo is bool;
+    }
+
+    function validAi(ai) {
+      return ai is map
+        && ai.keys().hasAll(['suggested', 'inferenceSource', 'model', 'generatedAt'])
+        && ai.keys().hasOnly(['suggested', 'inferenceSource', 'model', 'generatedAt'])
+        && ai.suggested is map
+        && ai.suggested.keys().hasOnly(['incidentType', 'severity', 'occurredAt', 'locationNote'])
+        && ai.inferenceSource in ['ON_DEVICE', 'IN_CLOUD']
+        && text(ai.model, 1, 100)
+        && ai.generatedAt is timestamp;
+    }
+
+    function allowedTransition(from, to) {
+      return (from == 'new' && to == 'triaged')
+        || (from == 'triaged' && to == 'in_progress')
+        || (from == 'in_progress' && to == 'resolved');
+    }
+
+    function canReadIncident(data) {
+      return inMyOrg(data) && (isStaff() || data.reporterId == request.auth.uid);
+    }
+
+    match /incidents/{incidentId} {
+      // A get of a nonexistent ID is allowed for members, so a sync
+      // transaction can read before creating. It reveals only that a random
+      // UUID is unused.
+      allow get: if isMember() && (resource == null || canReadIncident(resource.data));
+      allow list: if isMember() && canReadIncident(resource.data);
+
+      allow create: if isMember()
+        && isUuid(incidentId)
+        && incidentContent(request.resource.data)
+        && inMyOrg(request.resource.data)
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.status == 'new'
+        && !('lastStatusChange' in request.resource.data)
+        && request.resource.data.baseRevision == 0
+        && request.resource.data.serverRevision == 1
+        && request.resource.data.demo == false
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && waterPointInMyOrg(request.resource.data.waterPointId);
+
+      // Content edit by the reporter, only while the incident is new.
+      // baseRevision must equal the current serverRevision (stale writes
+      // are rejected) and serverRevision must advance by exactly one.
+      allow update: if isMember()
+        && resource.data.reporterId == request.auth.uid
+        && inMyOrg(resource.data)
+        && resource.data.status == 'new'
+        && incidentContent(request.resource.data)
+        && unchanged('organizationId') && unchanged('reporterId') && unchanged('demo')
+        && unchanged('createdAt') && unchanged('clientCreatedAt') && unchanged('status')
+        && !('lastStatusChange' in request.resource.data)
+        && request.resource.data.baseRevision == resource.data.serverRevision
+        && request.resource.data.serverRevision == resource.data.serverRevision + 1
+        && request.resource.data.mutationId != resource.data.mutationId
+        && request.resource.data.updatedAt == request.time
+        && (unchanged('waterPointId') || waterPointInMyOrg(request.resource.data.waterPointId));
+
+      // Status change by an administrator or technician. Only the listed
+      // transitions, and nothing but status metadata may change.
+      allow update: if isMember() && isStaff()
+        && inMyOrg(resource.data)
+        && onlyChanged(['status', 'lastStatusChange', 'serverRevision', 'updatedAt'])
+        && allowedTransition(resource.data.status, request.resource.data.status)
+        && request.resource.data.serverRevision == resource.data.serverRevision + 1
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.lastStatusChange is map
+        && request.resource.data.lastStatusChange.keys().hasAll(['by', 'at', 'from', 'to'])
+        && request.resource.data.lastStatusChange.keys().hasOnly(['by', 'at', 'from', 'to'])
+        && request.resource.data.lastStatusChange.by == request.auth.uid
+        && request.resource.data.lastStatusChange.at == request.time
+        && request.resource.data.lastStatusChange.from == resource.data.status
+        && request.resource.data.lastStatusChange.to == request.resource.data.status;
+
+      allow delete: if false;
+    }
+
+    // ---------- maintenanceTasks ----------
+
+    function taskFields(d) {
+      return d.keys().hasAll(['organizationId', 'waterPointId', 'incidentId', 'title', 'notes', 'status',
+          'assigneeId', 'createdBy', 'createdAt', 'updatedAt', 'demo'])
+        && d.keys().hasOnly(['organizationId', 'waterPointId', 'incidentId', 'title', 'notes', 'status',
+          'assigneeId', 'createdBy', 'createdAt', 'updatedAt', 'demo'])
+        && text(d.title, 1, 120)
+        && text(d.notes, 0, 2000)
+        && d.status in ['open', 'in_progress', 'done']
+        && (d.incidentId == null || isUuid(d.incidentId))
+        && (d.assigneeId == null || d.assigneeId is string)
+        && d.createdAt is timestamp
+        && d.updatedAt == request.time
+        && d.demo is bool;
+    }
+
+    function assigneeValid(assigneeId) {
+      return assigneeId == null || (isDocId(assigneeId) && staffMemberOfMyOrg(get(memberPath(assigneeId))));
+    }
+
+    function staffMemberOfMyOrg(member) {
+      return member != null
+        && member.data.organizationId == orgId()
+        && member.data.active == true
+        && member.data.role in ['administrator', 'technician'];
+    }
+
+    function incidentValid(incidentId) {
+      return incidentId == null
+        || (docIn('incidents', incidentId) != null && docIn('incidents', incidentId).data.organizationId == orgId());
+    }
+
+    function taskTransition(from, to) {
+      return from == to
+        || (from == 'open' && to == 'in_progress')
+        || (from == 'in_progress' && to == 'done');
+    }
+
+    match /maintenanceTasks/{taskId} {
+      allow get, list: if isMember() && isStaff() && inMyOrg(resource.data);
+
+      allow create: if isMember() && isStaff()
+        && taskFields(request.resource.data)
+        && inMyOrg(request.resource.data)
+        && request.resource.data.status == 'open'
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.demo == false
+        && waterPointInMyOrg(request.resource.data.waterPointId)
+        && incidentValid(request.resource.data.incidentId)
+        && assigneeValid(request.resource.data.assigneeId);
+
+      allow update: if isMember() && isStaff()
+        && inMyOrg(resource.data)
+        && taskFields(request.resource.data)
+        && onlyChanged(['title', 'notes', 'status', 'assigneeId', 'updatedAt'])
+        && taskTransition(resource.data.status, request.resource.data.status)
+        && (unchanged('assigneeId') || assigneeValid(request.resource.data.assigneeId));
+
+      allow delete: if false;
+    }
+
+    // ---------- patternAnalyses (Cloud Function writes only) ----------
+
+    match /patternAnalyses/{analysisId} {
+      allow get, list: if isMember() && isStaff() && inMyOrg(resource.data);
+      allow write: if false;
     }
   }
 }

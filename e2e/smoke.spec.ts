@@ -2,11 +2,14 @@ import { expect, test } from '@playwright/test'
 
 // Text is duplicated from src/strings/en.ts because the Node test config does
 // not import app source.
-test('app shell loads in a browser', async ({ page }) => {
+// The E2E build has no .env.local, so the app shows its configuration error
+// inside the shell. Flows that need Firebase run against the emulators later.
+test('app shell loads in a browser and reports missing configuration', async ({ page }) => {
   await page.goto('/')
   await expect(page).toHaveTitle('MajiPulse')
-  await expect(page.getByRole('heading', { level: 1, name: 'MajiPulse' })).toBeVisible()
+  await expect(page.getByRole('banner')).toContainText('MajiPulse')
   await expect(page.getByRole('main')).toBeVisible()
+  await expect(page.getByRole('alert')).toContainText('MajiPulse is not configured')
   await expect(page.getByRole('contentinfo')).toContainText('Offline reporting works after MajiPulse has loaded')
 })
 

@@ -20,6 +20,7 @@ export const en = {
     required: '(required)',
     selectPlaceholder: 'Select an option',
     errorPrefix: 'Error:',
+    you: '(you)',
   },
   states: {
     emptyTitle: 'Nothing here yet',
@@ -35,6 +36,7 @@ export const en = {
     closeMenu: 'Close menu',
     organization: 'Organization',
     signedInAs: 'Signed in as',
+    signOut: 'Sign out',
     demoBanner: 'Demo data (fictional). These records do not describe real people, places, or water points.',
     offlineHelp:
       'Offline reporting works after MajiPulse has loaded. Open the app while you are online before going to places without a connection.',
@@ -59,6 +61,81 @@ export const en = {
     technician: 'Technician',
     reporter: 'Reporter',
   },
+  config: {
+    title: 'MajiPulse is not configured',
+    description: 'The app settings are missing or invalid. Ask your administrator to check the deployment.',
+  },
+  signIn: {
+    title: 'Sign in to MajiPulse',
+    intro: 'Use the email and password from your organization. Accounts are created by an administrator.',
+    email: 'Email',
+    password: 'Password',
+    submit: 'Sign in',
+    emailInvalid: 'Enter a valid email address.',
+    passwordRequired: 'Enter your password.',
+    invalidCredentials: 'The email or password is incorrect.',
+    network: 'Signing in needs an internet connection. Connect and try again.',
+    tooManyAttempts: 'Too many attempts. Wait a few minutes, then try again.',
+    unknown: 'Sign-in failed. Try again.',
+  },
+  access: {
+    noAccessTitle: 'Your account is not ready',
+    noClaims: 'Your account has not been added to an organization yet. Ask your administrator.',
+    noMember: 'Your organization setup is not complete. Ask your administrator.',
+    inactive: 'Your account has been turned off. Ask your administrator.',
+    mismatch: 'Your account settings are being updated. Sign out and sign in again in a few minutes.',
+    deniedTitle: 'You do not have access to this page',
+    deniedDescription: 'This page is for other roles in your organization.',
+    notFoundTitle: 'Page not found',
+    notFoundDescription: 'This page does not exist.',
+    backHome: 'Go to the home page',
+  },
+  home: {
+    title: 'Home',
+    welcome: 'You are signed in as {role}.',
+    comingSoon: 'More screens will be added as MajiPulse is built.',
+  },
+  placeholder: {
+    description: 'This screen is not available yet. It will be added in a later version.',
+  },
+  users: {
+    title: 'Users',
+    intro: 'Create accounts for technicians and reporters, and change roles for other users.',
+    listTitle: 'Members of your organization',
+    emptyTitle: 'No members found',
+    name: 'Name',
+    email: 'Email',
+    role: 'Role',
+    status: 'Status',
+    actions: 'Actions',
+    active: 'Active',
+    inactive: 'Inactive',
+    changeRoleFor: 'Role for {name}',
+    saveRole: 'Save role',
+    roleSaved: 'Role updated for {name}.',
+    createTitle: 'Create a user',
+    createSubmit: 'Create user',
+    nameRequired: 'Enter the person’s name.',
+    roleRequired: 'Choose a role.',
+    created: 'Account created for {email}.',
+    resetLinkLabel: 'Password setup link',
+    resetLinkHelp:
+      'Share this link privately with the person. It lets them set their password. It is shown only once, so copy it now.',
+    errors: {
+      alreadyExists: 'An account with this email already exists.',
+      invalid: 'Check the email, name, and role.',
+      permission: 'Only administrators can manage users. Sign out and sign in again if your role changed.',
+      otherSettings: 'This account has other settings. Ask the project owner to review it before changing the role.',
+      notFound: 'This user is not a member of your organization.',
+      network: 'This needs an internet connection. Connect and try again.',
+      unknown: 'Something went wrong. Try again.',
+    },
+  },
 } as const satisfies StringTree
 
 export type Strings = typeof en
+
+/** Replaces {name} placeholders. Values are inserted as plain text by React. */
+export function format(template: string, values: Readonly<Record<string, string>>): string {
+  return template.replace(/\{(\w+)\}/g, (match, key: string) => values[key] ?? match)
+}

@@ -1,17 +1,13 @@
-import { AppShell } from './components/layout/AppShell'
-import { useOnlineStatus } from './lib/useOnlineStatus'
-import { en } from './strings/en'
+import { ServicesProvider } from './app/ServicesProvider'
+import type { AppServices } from './app/servicesContext'
+import { AppRoutes } from './routes/AppRoutes'
 
-function App() {
-  const online = useOnlineStatus()
+/** Router is supplied by the caller (BrowserRouter in main.tsx, MemoryRouter in tests). */
+function App({ services }: { services: AppServices }) {
   return (
-    <AppShell online={online}>
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-sky-900">{en.app.name}</h1>
-        <p className="text-lg text-slate-700">{en.app.tagline}</p>
-        <p className="text-slate-700">{en.app.setupNotice}</p>
-      </div>
-    </AppShell>
+    <ServicesProvider services={services}>
+      <AppRoutes />
+    </ServicesProvider>
   )
 }
 

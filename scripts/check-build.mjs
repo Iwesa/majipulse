@@ -6,7 +6,16 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-export const FORBIDDEN_MARKERS = ['FIREBASE_APPCHECK_DEBUG_TOKEN']
+/**
+ * The App Check SDK itself *reads* FIREBASE_APPCHECK_DEBUG_TOKEN (comparisons
+ * such as `x.FIREBASE_APPCHECK_DEBUG_TOKEN !== true`), so the bare name is
+ * always in a build that uses App Check. What must never ship is code that
+ * *sets* it, or the env variable that carries the token.
+ */
+export const FORBIDDEN_MARKERS = [
+  { name: 'FIREBASE_APPCHECK_DEBUG_TOKEN assignment', pattern: /FIREBASE_APPCHECK_DEBUG_TOKEN\s*=(?!=)/ },
+  { name: 'VITE_APPCHECK_DEBUG_TOKEN', pattern: /VITE_APPCHECK_DEBUG_TOKEN/ },
+]
 const TOKEN_ENV_KEY = 'VITE_APPCHECK_DEBUG_TOKEN'
 const LOCAL_ENV_FILES = ['.env.development.local', '.env.local', '.env']
 
@@ -46,7 +55,7 @@ export function findForbidden(distDir, { markers = FORBIDDEN_MARKERS, tokenValue
   for (const file of listFiles(distDir)) {
     const content = readFileSync(file, 'utf8')
     for (const marker of markers) {
-      if (content.includes(marker)) findings.push({ file, kind: `marker ${marker}` })
+      if (marker.pattern.test(content)) findings.push({ file, kind: `marker ${marker.name}` })
     }
     for (const value of tokenValues) {
       if (content.includes(value)) findings.push({ file, kind: `${TOKEN_ENV_KEY} value` })

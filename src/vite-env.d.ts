@@ -16,3 +16,7 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+// Read by the Firebase App Check SDK. Set only in development builds.
+// eslint-disable-next-line no-var
+declare var FIREBASE_APPCHECK_DEBUG_TOKEN: string | boolean | undefined

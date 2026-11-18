@@ -13,18 +13,18 @@ const NAV_ID = 'primary-navigation'
 interface AppShellProps {
   /** Signed-in user's role. Navigation is hidden when there is no session. */
   role?: Role
-  /** Organization name or switcher. Filled in Phase 2. */
+  /** Organization name. */
   organizationSlot?: ReactNode
-  /** Signed-in user name and sign-out control. Filled in Phase 2. */
+  /** Signed-in user name and sign-out control. */
   userSlot?: ReactNode
   online: boolean
   showDemoBanner?: boolean
   /** Short message announced politely to screen readers, such as "Report saved". */
   statusMessage?: string
-  currentPath?: string
   children: ReactNode
 }
 
+/** Needs a React Router context when `role` is set (navigation uses NavLink). */
 export function AppShell({
   role,
   organizationSlot,
@@ -32,7 +32,6 @@ export function AppShell({
   online,
   showDemoBanner = false,
   statusMessage = '',
-  currentPath,
   children,
 }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -70,7 +69,7 @@ export function AppShell({
           <div className="ml-auto flex flex-wrap items-center gap-3">
             <ConnectivityIndicator online={online} />
             {userSlot && (
-              <div className="text-sm text-slate-700">
+              <div className="flex items-center gap-2 text-sm text-slate-700">
                 <span className="sr-only">{en.layout.signedInAs} </span>
                 {userSlot}
               </div>
@@ -86,7 +85,7 @@ export function AppShell({
           <PrimaryNav
             id={NAV_ID}
             role={role}
-            currentPath={currentPath}
+            onNavigate={() => setMenuOpen(false)}
             className={cn(
               'border-b border-slate-300 p-3 md:block md:w-60 md:shrink-0 md:border-r md:border-b-0',
               menuOpen ? 'block' : 'hidden',

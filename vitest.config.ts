@@ -9,7 +9,9 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.mjs'],
+    include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.mjs', 'functions/test/**/*.test.ts'],
+    // Emulator tests need running emulators; they run through `npm run test:emulators`.
+    exclude: ['**/node_modules/**', 'tests/emulator/**', 'functions/test/emulator/**'],
     restoreMocks: true,
   },
 })

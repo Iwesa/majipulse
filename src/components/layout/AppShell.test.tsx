@@ -2,14 +2,16 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { Role } from '../../schemas/roles'
 import { en } from '../../strings/en'
+import { routerAt } from '../../test/fakeServices'
 import { AppShell } from './AppShell'
 import { NAV_ITEMS, navItemsForRole } from './navigation'
 
-const renderShell = (props: Partial<Parameters<typeof AppShell>[0]> = {}) =>
+const renderShell = (props: Partial<Parameters<typeof AppShell>[0]> = {}, path = '/') =>
   render(
     <AppShell online {...props}>
       <h1>Page</h1>
     </AppShell>,
+    { wrapper: routerAt(path) },
   )
 
 const navLabels = () =>
@@ -71,9 +73,15 @@ describe('AppShell', () => {
   })
 
   it('marks the current page', () => {
-    renderShell({ role: 'technician', currentPath: '/incidents' })
+    renderShell({ role: 'technician' }, '/incidents')
     expect(screen.getByRole('link', { name: en.nav.incidents })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('link', { name: en.nav.home })).not.toHaveAttribute('aria-current')
+  })
+
+  it('does not mark "My reports" current on the new report page', () => {
+    renderShell({ role: 'reporter' }, '/reports/new')
+    expect(screen.getByRole('link', { name: en.nav.newReport })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: en.nav.myReports })).not.toHaveAttribute('aria-current')
   })
 
   it('toggles the mobile menu with aria-expanded', () => {
