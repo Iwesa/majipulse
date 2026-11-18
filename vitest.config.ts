@@ -1,12 +1,11 @@
+import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 
-// Separate from vite.config.ts on purpose: Vitest 3 runs on its own Vite 7,
-// while @vitejs/plugin-react 6 and @tailwindcss/vite target Vite 8. JSX is
-// compiled with esbuild's automatic runtime instead of the React plugin.
+// Vitest 5 runs on the same Vite 8 as the app, so it uses the same React plugin.
+// The Tailwind plugin is left out: jsdom does not render CSS, and component
+// tests assert class names instead.
 export default defineConfig({
-  esbuild: {
-    jsx: 'automatic',
-  },
+  plugins: [react()],
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
