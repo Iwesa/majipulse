@@ -11,6 +11,7 @@
 - Roles and organization live in custom claims `{ organizationId, role }`, mirrored in server-written `members/{uid}`. Only Admin SDK code sets them, in two ways:
   - **Operator-run bootstrap script** (`functions/scripts/bootstrap-first-admin.ts`): creates the first organization and administrator. Run by the project owner with their own Application Default Credentials or against emulators. Never deployed, never callable from the app, no service account key files.
   - **Administrator-only Cloud Functions** (`createOrgUser`, `setUserRole`): all later user management, limited to the caller's organization. A user can never change their own role or grant themselves administrator.
+- `setCustomUserClaims` replaces the whole claims map. Never set claims on a user who already has a `members/{uid}` record or any claims, except in the specified bootstrap resume path. Never overwrite another organization's membership or unrelated claims.
 - No public self-registration.
 - Rules and functions read the role from the verified ID token.
 - Reporter, technician, and administrator permissions must be tested separately.

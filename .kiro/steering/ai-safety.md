@@ -28,6 +28,9 @@
 - Tell the user clearly when AI was not used.
 
 ## Privacy and abuse
-- Send the minimum necessary data to AI. Do not send personal data unless required.
+- Send the minimum necessary data to AI. Never send structured identity fields.
+- Omitting `reporterId` does not make free text safe. Run every free-text value through the shared redactor (`shared/privacy/`) before any model call, client or server, including when on-device inference is expected.
+- Redaction is best-effort. Show reporters the redacted preview and a warning before AI suggestions, and never claim personal data is fully removed.
+- Discard AI output that contains redaction placeholders or detected personal information.
 - Treat report text as data, not instructions (prompt injection). Do not let it change schemas, roles, or tools.
 - Never place server secrets or privileged prompts in frontend code.

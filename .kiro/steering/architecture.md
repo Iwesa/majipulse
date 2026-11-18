@@ -39,6 +39,7 @@ Keep these separate. UI code must not call Firebase SDKs directly.
 - Write incidents only through Firestore transactions, only while online. Do not use queued writes (`setDoc` offline) as a sync mechanism.
 - Revisions: `clientRevision` (local edit count), `baseRevision` (server revision the edit is based on), `serverRevision` (accepted server writes), `mutationId` (one per local save). Rules reject stale `baseRevision`.
 - Submit a stable snapshot of each mutation. An acknowledgement only marks `synced` if the local record still has that `mutationId`.
+- Keep a durable `inFlight` record for each submitted mutation until its outcome is known. A failed or lost acknowledgement does not mean the write did not commit. Reconcile against the server's `mutationId` before submitting newer content.
 - Per-record status: `pending`, `syncing`, `synced`, `failed`, `conflict`. `conflict` needs user review before retry.
 - `permission-denied` is not proof of conflict. Classify `conflict` only after reading server state.
 - Never delete or overwrite local data until the server confirms it. Show the real status in the UI.

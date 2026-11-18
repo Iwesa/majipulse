@@ -1,6 +1,6 @@
 # MajiPulse MVP: Requirements
 
-Status: REVISION 3. Decisions D1 to D7 approved (see `design.md`, "Decision record"). No implementation has started.
+Status: REVISION 4. Decisions D1 to D7 approved (see `design.md`, "Decision record"). No implementation has started.
 Governed by `.kiro/steering/*`. Design is in `design.md`, tasks in `tasks.md`.
 
 ## 1. Product requirements
@@ -45,6 +45,8 @@ Offline cold start (stretch only), offline water-point registration, photo attac
 - R11.6 IF the bootstrap fails partway, THEN THE bootstrap script SHALL record the partial state, SHALL support a resume that completes it without creating a second administrator, and SHALL support a confirmed cleanup that removes only what the bootstrap created.
 - R11.7 THE bootstrap script SHALL NOT accept, print, or store passwords or tokens, and SHALL print the password-reset link only to the terminal.
 - R11.8 THE SYSTEM SHALL NOT grant access to business data unless the user has both custom claims and a matching active `members/{uid}` document, so a partially bootstrapped administrator has no access.
+- R11.9 THE bootstrap script SHALL refuse, without changing anything, to use an existing Auth user that already has a `members/{uid}` document or any custom claims, except during a resume of the same organization's bootstrap for the same recorded administrator UID with exactly the expected claims.
+- R11.10 THE SYSTEM SHALL NOT overwrite another organization's membership or unrelated custom claims. `createOrgUser` SHALL refuse emails that already have an Auth user, and `setUserRole` SHALL refuse targets with claims outside `{ organizationId, role }`.
 
 **Water points**
 - R2.1 WHEN an administrator or technician submits a valid water-point form, THE SYSTEM SHALL create the record with the user's `organizationId`.
@@ -67,6 +69,9 @@ Offline cold start (stretch only), offline water-point registration, photo attac
 - R4.5 WHEN the reporter has confirmed or edited a field, THE SYSTEM SHALL NOT overwrite it on a later extraction.
 - R4.6 THE SYSTEM SHALL NOT present invented facts, causes, or locations. Fields absent from the report stay empty.
 - R4.7 IF AI is unavailable, times out, or fails, THEN THE SYSTEM SHALL let the reporter complete and save the report manually.
+- R4.8 BEFORE any free text is sent to a model (client extraction or server pattern analysis), THE SYSTEM SHALL redact detectable personal information: Kenyan phone numbers in common formats, email addresses, long digit sequences, identifiers introduced by explicit cue phrases (for example "my name is", "ID number", "jina langu ni"), and titled names.
+- R4.9 BEFORE requesting AI suggestions, THE SYSTEM SHALL show the reporter the redacted text that will be sent, warn that names and other details may not be detected automatically, and let the reporter edit the description first or cancel without any AI call.
+- R4.10 THE SYSTEM SHALL discard AI output that contains a redaction placeholder or text matching a personal-information detector.
 
 **Synchronization**
 - R5.1 WHEN online, THE SYSTEM SHALL submit pending reports through a Firestore transaction and mark each `synced` only after the transaction commits.
@@ -81,13 +86,16 @@ Offline cold start (stretch only), offline water-point registration, photo attac
 - R5.10 THE permission-denied check SHALL NOT change the report's local content.
 - R5.11 THE SYSTEM SHALL submit an immutable snapshot of each mutation, identified by its `mutationId`.
 - R5.12 WHEN the user edits a report while an earlier mutation is in flight, THE SYSTEM SHALL keep the newer content and its `pending` status. An acknowledgement for the older mutation SHALL NOT mark the newer edit `synced`.
+- R5.13 WHEN an earlier mutation fails or its acknowledgement is uncertain, THE SYSTEM SHALL keep a durable record of that in-flight mutation (`mutationId` and `baseRevision`) and SHALL NOT assume it did not commit.
+- R5.14 BEFORE submitting newer content for a record with an unresolved in-flight mutation, THE SYSTEM SHALL reconcile against the server document. IF the server contains the in-flight `mutationId`, THEN THE SYSTEM SHALL advance the newer edit's `baseRevision` to that mutation's committed revision, keep the newer content `pending`, and SHALL NOT classify it as a conflict or mark it `synced` because of the older commit.
+- R5.15 IF the server document cannot be read during reconciliation, THEN THE SYSTEM SHALL keep the in-flight record, submit nothing for that report, and retry reconciliation later.
 
 **Triage and maintenance**
 - R7.1 WHEN an administrator or technician views incidents, THE SYSTEM SHALL list their organization's incidents, filtered by status and water point.
-- R7.2 THE SYSTEM SHALL allow only the status transitions `new → triaged`, `triaged → in_progress`, and `in_progress → resolved`, and record who changed it and when.
+- R7.2 THE SYSTEM SHALL allow only the status transitions `new â†’ triaged`, `triaged â†’ in_progress`, and `in_progress â†’ resolved`, and record who changed it and when.
 - R7.3 Security rules SHALL reject any other transition, any status change by a reporter, and any change to fields other than `status`, `lastStatusChange`, `serverRevision`, and `updatedAt` during a status update.
 - R8.1 WHEN a technician or administrator creates a maintenance task from an incident, THE SYSTEM SHALL link it by `incidentId` and `waterPointId`.
-- R8.2 THE SYSTEM SHALL allow assignment to a technician in the same organization and status updates `open → in_progress → done`.
+- R8.2 THE SYSTEM SHALL allow assignment to a technician in the same organization and status updates `open â†’ in_progress â†’ done`.
 
 **Pattern analysis**
 - R9.1 WHEN an administrator or technician requests analysis, THE SYSTEM SHALL run it in a Cloud Function using cloud AI.
@@ -130,7 +138,7 @@ All access is limited to the user's own `organizationId`. No role has cross-orga
 - S4 Pattern analysis runs only in a Cloud Function that enforces App Check, verifies auth, role, and organization, and validates input with Zod.
 - S5 Firebase App Check is configured in the client and enforced for Firestore, Cloud Functions, and Firebase AI Logic (and Storage if T-S1 is built).
 - S6 No server secrets, service account keys, or App Check debug tokens in frontend code, the repo, build output, or logs. `.env.example` contains placeholders only. Real `.env*` files are git-ignored.
-- S7 AI prompts receive the minimum data needed. Reporter identity and contact details are never sent to AI.
+- S7 AI prompts receive the minimum data needed. Structured identity fields (`reporterId`, `createdBy`, member data) and `locationNote` are never sent to AI. Free-text descriptions are redacted before sending (R4.8). Redaction is best-effort: personal information that cannot be detected automatically (for example a name without a cue) may remain, and the system does not claim otherwise. The reporter warning and preview (R4.9) address that residual risk.
 - S8 Report text is treated as data, not as instructions to the AI.
 - S9 Logs exclude tokens and personal data.
 - S10 Demo data contains no real people, phone numbers, or real facility records.
@@ -147,7 +155,7 @@ General: mobile-first, responsive, accessible (semantic HTML, labeled controls, 
 | Home | All | Role-based. Reporter: new report, pending and conflict counts. Admin and technician: open incidents, open tasks, sync status. |
 | Users | Admin | Create technician and reporter accounts, change roles of other users. |
 | Water points list and detail | All view, admin and technician edit | Search, view, register and edit form. |
-| New report | All | Water point picker, description, "Suggest fields", review panel with accept or edit per field, save. |
+| New report | All | Water point picker, description with "no names or phone numbers" help text, "Suggest fields" with the privacy preview (send, edit first, cancel), review panel with accept or edit per field, save. |
 | My reports | All | Local and synced reports with status (`pending`, `syncing`, `synced`, `failed`, `conflict`), retry, edit if allowed. |
 | Conflict review | Report owner | Server version beside the local edit. Actions: retry on latest version (if still allowed) or discard the local edit after confirmation. |
 | Incident list and detail | Admin, technician | Filters, triage, AI-suggested versus confirmed values with provenance, create maintenance task. |
@@ -176,6 +184,11 @@ The MVP is accepted when all of the following hold on the demo dataset:
 15. **AC15** `npm run lint`, `npm run build`, `npm test`, rules tests, functions tests, and the Playwright offline flow pass.
 16. **AC16** The app is deployed to Firebase Hosting with App Check enforced, and the main flows pass an accessibility check at 360px and 1280px widths.
 17. **AC17 Sync race.** If a report is edited while an earlier mutation is in flight, the older acknowledgement does not mark it `synced`. The newer content stays `pending`, then syncs, and the server ends with the newer content and one document.
+    - **AC17b Lost acknowledgement, then newer edit.** Mutation A commits on the server, the user edits (mutation B), and A's acknowledgement is lost (client sees an error). On the next sync, B is **not** marked `conflict`, B **commits successfully**, the server document holds B's content with `mutationId == B` and `serverRevision == A's revision + 1`, the local record is `synced`, and there is still one document. Verified for both a new report (A is the create) and an update.
+    - **AC17c Unreadable server during reconciliation.** If the server cannot be read when reconciling A, nothing is submitted, the in-flight record survives an app restart, and once the server is readable AC17b's outcome follows.
+    - **AC17d Lost acknowledgement, then triage.** If A committed and an administrator then triaged the incident, B is correctly marked `conflict` with local content unchanged.
 18. **AC18 Permission-denied classification.** A `permission-denied` caused by a stale revision or a status past `new` is marked `conflict`. A `permission-denied` caused by changed claims, a different organization, or failed field validation is marked `failed` with reason "permission denied". Local content is unchanged in both cases.
-19. **AC19 Status transitions.** Rules allow exactly `new → triaged`, `triaged → in_progress`, `in_progress → resolved` by administrators and technicians. They deny skipped, reversed, and same-status transitions, any reporter status change, and any other field change in a status update.
+19. **AC19 Status transitions.** Rules allow exactly `new â†’ triaged`, `triaged â†’ in_progress`, `in_progress â†’ resolved` by administrators and technicians. They deny skipped, reversed, and same-status transitions, any reporter status change, and any other field change in a status update.
 20. **AC20 Bootstrap recovery.** For each partial state in the design's "Partial states" table, the script either resumes to a complete state with exactly one administrator, or refuses with instructions. Cleanup removes only bootstrap-created data after confirmation. Users of an incomplete organization cannot read business data. No password or token appears in output or logs except the single printed reset link.
+21. **AC21 AI privacy.** With shared fixtures, the redactor replaces all listed Kenyan phone formats, emails (standard and spelled out), cue-phrase identifiers in English and Swahili, titled names, and 9+ digit numbers, and leaves ordinary incident text unchanged. Both the client prompt builder and the pattern-analysis function send only redacted text (asserted on the captured model request). The reporter sees the preview and warning before any AI call and can cancel with no call made. AI output echoing a placeholder or a detected identifier is discarded.
+22. **AC22 Existing-user protection.** Bootstrap refuses, with no changes to claims, member documents, or the organization, when the email belongs to a user with a `members/{uid}` record in another organization, and separately when the user has any existing custom claims (organization or unrelated). Resume accepts only the recorded `adminUid` with empty or exactly expected claims. `createOrgUser` refuses an existing email, and `setUserRole` refuses targets with unrelated claims.
