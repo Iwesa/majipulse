@@ -5,7 +5,9 @@ import { MemoryRouter } from 'react-router-dom'
 import { vi } from 'vitest'
 import App from '../App'
 import type { AppServices } from '../app/servicesContext'
-import type { Role } from '../schemas/roles'
+import type { Role, SessionScope } from '../schemas/roles'
+import type { WaterPointRecord } from '../schemas/waterPoint'
+import { WaterPointServiceError, type WaterPointCache, type WaterPointService } from '../services/waterPoints'
 import type { AuthService, Session, SessionUser } from '../services/session'
 import type { MemberSummary, UserAdminService } from '../services/userAdmin'
 
@@ -69,10 +71,76 @@ export function fakeUserAdmin(overrides: Partial<UserAdminService> = {}): UserAd
   }
 }
 
+export const T_WP = '2026-03-01T08:00:00.000Z'
+
+export const waterPointRecord = (overrides: Partial<WaterPointRecord> = {}): WaterPointRecord => ({
+  id: 'wp-mwamanga',
+  organizationId: 'kwale-demo',
+  name: 'Mwamanga Borehole (fictional)',
+  type: 'borehole',
+  locationDescription: 'Beside the fictional primary school',
+  ward: 'Demo Ward',
+  status: 'working',
+  demo: true,
+  createdBy: 'uid-administrator',
+  createdAt: T_WP,
+  updatedAt: T_WP,
+  ...overrides,
+})
+
+export const WATER_POINTS: WaterPointRecord[] = [
+  waterPointRecord(),
+  waterPointRecord({ id: 'wp-soko', name: 'Soko Kiosk (fictional)', type: 'kiosk', ward: 'Market Ward', status: 'needs_repair' }),
+]
+
+/** In-memory water point service. `fail` makes list/create/update throw. */
+export class FakeWaterPointService implements WaterPointService {
+  points: WaterPointRecord[]
+  fail: WaterPointServiceError | null = null
+  private nextId = 1
+
+  constructor(points: WaterPointRecord[] = WATER_POINTS) {
+    this.points = [...points]
+  }
+
+  list = vi.fn<WaterPointService['list']>(async (scope) => {
+    if (this.fail) throw this.fail
+    return this.points.filter((p) => p.organizationId === scope.organizationId)
+  })
+
+  create = vi.fn<WaterPointService['create']>(async (scope, input) => {
+    if (this.fail) throw this.fail
+    const id = `wp-new-${this.nextId++}`
+    this.points.push({ ...input, id, organizationId: scope.organizationId, demo: false, createdBy: scope.ownerUid, createdAt: T_WP, updatedAt: T_WP })
+    return id
+  })
+
+  update = vi.fn<WaterPointService['update']>(async (scope, id, input) => {
+    if (this.fail) throw this.fail
+    const index = this.points.findIndex((p) => p.id === id && p.organizationId === scope.organizationId)
+    if (index < 0) throw new WaterPointServiceError('notFound')
+    const { ward: _ward, ...rest } = this.points[index]
+    void _ward
+    this.points[index] = { ...rest, ...input }
+  })
+}
+
+/** In-memory cache with the same scoping as the IndexedDB one. */
+export class FakeWaterPointCache implements WaterPointCache {
+  saved = new Map<string, { points: WaterPointRecord[]; cachedAt: string }>()
+  private key = (scope: SessionScope) => `${scope.organizationId}|${scope.ownerUid}`
+  read = vi.fn<WaterPointCache['read']>(async (scope) => this.saved.get(this.key(scope)) ?? null)
+  replace = vi.fn<WaterPointCache['replace']>(async (scope, points, cachedAt) => {
+    this.saved.set(this.key(scope), { points: [...points], cachedAt })
+  })
+}
+
 export function renderApp(path: string, services: Partial<AppServices> = {}) {
   const all: AppServices = {
     auth: services.auth ?? new FakeAuthService(),
     userAdmin: services.userAdmin ?? fakeUserAdmin(),
+    waterPoints: services.waterPoints ?? new FakeWaterPointService(),
+    waterPointCache: services.waterPointCache ?? new FakeWaterPointCache(),
   }
   return { ...render(<App services={all} />, { wrapper: routerAt(path) }), services: all }
 }

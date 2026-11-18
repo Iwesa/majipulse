@@ -18,3 +18,16 @@ export const waterPointSchema = z.strictObject({
   updatedAt: isoDateTimeSchema,
 })
 export type WaterPoint = z.infer<typeof waterPointSchema>
+
+/** Fields a staff member enters. Everything else is set by the service. */
+export const waterPointInputSchema = waterPointSchema.pick({
+  name: true,
+  type: true,
+  locationDescription: true,
+  ward: true,
+  status: true,
+})
+export type WaterPointInput = z.infer<typeof waterPointInputSchema>
+
+/** A water point with its Firestore document ID. */
+export type WaterPointRecord = WaterPoint & { id: string }

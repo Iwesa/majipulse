@@ -7,6 +7,9 @@ import { initFirebase } from './services/firebase/app'
 import { createFirebaseAuthService } from './services/firebase/authService'
 import { ConfigError, loadAppConfig } from './services/firebase/config'
 import { createFirebaseUserAdminService } from './services/firebase/userAdminService'
+import { createFirebaseWaterPointService } from './services/firebase/waterPointService'
+import { openMajiPulseDb } from './services/offline/db'
+import { createIdbWaterPointCache } from './services/offline/waterPointCache'
 import './index.css'
 
 const root = createRoot(document.getElementById('root')!)
@@ -15,9 +18,15 @@ try {
   const config = loadAppConfig()
   // The debug token is read only in development builds.
   const firebase = initFirebase(config, import.meta.env.DEV ? import.meta.env.VITE_APPCHECK_DEBUG_TOKEN : undefined)
+  // If IndexedDB is unavailable (for example some private windows), cache
+  // calls fail and the app works online only.
+  const database = openMajiPulseDb()
+  database.catch(() => undefined)
   const services = {
     auth: createFirebaseAuthService(firebase.auth, firebase.db),
     userAdmin: createFirebaseUserAdminService(firebase.db, firebase.functions),
+    waterPoints: createFirebaseWaterPointService(firebase.db),
+    waterPointCache: createIdbWaterPointCache(database),
   }
   root.render(
     <StrictMode>

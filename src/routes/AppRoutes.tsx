@@ -4,10 +4,14 @@ import { HomePage } from '../pages/HomePage'
 import { NotFoundPage, PlaceholderPage } from '../pages/StatusPages'
 import { SignInPage } from '../pages/SignInPage'
 import { UsersPage } from '../pages/UsersPage'
+import { WaterPointDetailPage } from '../pages/waterPoints/WaterPointDetailPage'
+import { WaterPointFormPage } from '../pages/waterPoints/WaterPointFormPage'
+import { WaterPointsPage } from '../pages/waterPoints/WaterPointsPage'
+import { STAFF_ROLES } from '../schemas/roles'
 import { RequireRole, RequireSession } from './guards'
 
-/** Screens that exist in this phase. Every other nav item gets a placeholder. */
-const PAGES = { home: HomePage, users: UsersPage } as const
+/** Screens that exist so far. Every other nav item gets a placeholder. */
+const PAGES = { home: HomePage, users: UsersPage, waterPoints: WaterPointsPage } as const
 
 /** There is deliberately no sign-up route (R1.4). */
 export function AppRoutes() {
@@ -23,6 +27,11 @@ export function AppRoutes() {
             </Route>
           )
         })}
+        <Route element={<RequireRole roles={STAFF_ROLES} />}>
+          <Route path="/water-points/new" element={<WaterPointFormPage mode="create" />} />
+          <Route path="/water-points/:waterPointId/edit" element={<WaterPointFormPage mode="edit" />} />
+        </Route>
+        <Route path="/water-points/:waterPointId" element={<WaterPointDetailPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

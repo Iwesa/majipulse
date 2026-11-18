@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useSession } from '../app/servicesContext'
+import { useWaterPointRefresh } from '../app/useWaterPointRefresh'
 import { AppShell } from '../components/layout/AppShell'
 import { Button, EmptyState, Spinner } from '../components/ui'
 import { useOnlineStatus } from '../lib/useOnlineStatus'
@@ -60,9 +61,16 @@ export function RequireSession() {
         </>
       }
     >
+      <WaterPointRefresh organizationId={user.organizationId} ownerUid={user.uid} />
       <Outlet />
     </AppShell>
   )
+}
+
+/** Renders nothing; keeps the water point cache fresh for the signed-in user. */
+function WaterPointRefresh({ organizationId, ownerUid }: { organizationId: string; ownerUid: string }) {
+  useWaterPointRefresh(organizationId, ownerUid)
+  return null
 }
 
 /** Shows an access message instead of the page for other roles. */

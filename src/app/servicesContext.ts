@@ -2,17 +2,22 @@ import { createContext, useContext } from 'react'
 import { useStore } from 'zustand'
 import type { AuthService } from '../services/session'
 import type { UserAdminService } from '../services/userAdmin'
+import type { WaterPointCache, WaterPointService } from '../services/waterPoints'
 import type { SessionState, SessionStore } from '../stores/sessionStore'
+import type { WaterPointState, WaterPointStore } from '../stores/waterPointStore'
 
 /** Everything the UI needs from outside, injected so tests can use fakes. */
 export interface AppServices {
   auth: AuthService
   userAdmin: UserAdminService
+  waterPoints: WaterPointService
+  waterPointCache: WaterPointCache
 }
 
 export interface ServicesValue {
   services: AppServices
   sessionStore: SessionStore
+  waterPointStore: WaterPointStore
 }
 
 export const ServicesContext = createContext<ServicesValue | null>(null)
@@ -29,4 +34,8 @@ export function useServices(): AppServices {
 
 export function useSession<T>(selector: (state: SessionState) => T): T {
   return useStore(useServicesValue().sessionStore, selector)
+}
+
+export function useWaterPoints<T>(selector: (state: WaterPointState) => T): T {
+  return useStore(useServicesValue().waterPointStore, selector)
 }
