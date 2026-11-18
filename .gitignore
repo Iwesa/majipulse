@@ -22,3 +22,22 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files: real values and App Check debug tokens never go to git.
+# Only .env.example (placeholders) is tracked.
+.env
+.env.*
+!.env.example
+
+# Credentials and Firebase local artifacts
+*-service-account*.json
+firebase-debug*.log
+firestore-debug*.log
+ui-debug*.log
+.firebase/
+
+# Test output
+coverage
+test-results
+playwright-report
+playwright/.cache
