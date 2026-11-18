@@ -26,7 +26,7 @@ Keep these separate. UI code must not call Firebase SDKs directly.
 
 ## AI
 - Individual incident extraction: Firebase AI Logic (Gemini Developer API backend) with `InferenceMode.PREFER_ON_DEVICE` and cloud fallback.
-- Record the actual `response.inferenceSource` (`ON_DEVICE` or `IN_CLOUD`). Do not infer or hardcode it.
+- Record the actual `response.inferenceSource` (`'on_device'` or `'in_cloud'`, the values of `InferenceSource.ON_DEVICE` and `IN_CLOUD`). Do not infer or hardcode it.
 - Cross-incident pattern analysis: cloud AI only, via `@google/genai` with Vertex AI in a 2nd gen callable Cloud Function.
 - Check the current Firebase AI Logic docs before writing SDK code. Do not guess API names or options.
 - See `ai-safety.md`.

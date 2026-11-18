@@ -63,7 +63,7 @@ Offline cold start (stretch only), offline water-point registration, photo attac
 
 **AI-assisted extraction**
 - R4.1 WHEN the reporter requests extraction, THE SYSTEM SHALL call Firebase AI Logic with `InferenceMode.PREFER_ON_DEVICE`, which falls back to the cloud model when on-device inference is unavailable.
-- R4.2 THE SYSTEM SHALL record the SDK-reported `response.inferenceSource` (`ON_DEVICE` or `IN_CLOUD`) with each suggestion and display it.
+- R4.2 THE SYSTEM SHALL record the SDK-reported `response.inferenceSource` (`'on_device'` or `'in_cloud'`, the values of `InferenceSource.ON_DEVICE` and `InferenceSource.IN_CLOUD`) with each suggestion and display it.
 - R4.3 THE SYSTEM SHALL validate AI output with Zod and discard invalid output, showing that suggestions are unavailable.
 - R4.4 THE SYSTEM SHALL show suggestions as editable proposals. Nothing is applied until the reporter accepts it.
 - R4.5 WHEN the reporter has confirmed or edited a field, THE SYSTEM SHALL NOT overwrite it on a later extraction.

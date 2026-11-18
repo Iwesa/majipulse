@@ -147,6 +147,8 @@ export function renderApp(path: string, services: Partial<AppServices> = {}) {
     incidentOutbox: services.incidentOutbox ?? createIdbIncidentOutbox(openMajiPulseDb(`test-${crypto.randomUUID()}`)),
     // No sync unless a test opts in, so reports stay local and predictable.
     ...(services.incidentSync ? { incidentSync: services.incidentSync } : {}),
+    // No AI unless a test opts in.
+    ...(services.incidentExtractor ? { incidentExtractor: services.incidentExtractor } : {}),
   }
   return { ...render(<App services={all} />, { wrapper: routerAt(path) }), services: all }
 }

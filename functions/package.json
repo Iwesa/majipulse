@@ -2,14 +2,14 @@
   "name": "majipulse-functions",
   "private": true,
   "type": "module",
-  "main": "lib/index.js",
+  "main": "lib/functions/src/index.js",
   "engines": {
     "node": "22"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "bootstrap-first-admin": "node lib/scripts/bootstrap-first-admin.js",
-    "seed-demo": "node lib/scripts/seed-demo.js"
+    "bootstrap-first-admin": "node lib/functions/src/scripts/bootstrap-first-admin.js",
+    "seed-demo": "node lib/functions/src/scripts/seed-demo.js"
   },
   "dependencies": {
     "firebase-admin": "^14.5.1",

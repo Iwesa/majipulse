@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
 import { useStore } from 'zustand'
+import type { IncidentExtractor } from '../services/ai/types'
 import type { IncidentOutbox } from '../services/incidents'
 import type { AuthService } from '../services/session'
 import type { IncidentSyncAdapter } from '../services/sync/types'
@@ -19,6 +20,8 @@ export interface AppServices {
   incidentOutbox: IncidentOutbox
   /** Server sync. Always set in the app; tests leave it out to keep reports local. */
   incidentSync?: IncidentSyncAdapter
+  /** AI field suggestions (Firebase AI Logic). Optional: without it, reporting is manual only. */
+  incidentExtractor?: IncidentExtractor
 }
 
 export interface ServicesValue {

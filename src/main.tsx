@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import { ConfigErrorPage } from './pages/ConfigErrorPage'
+import { createFirebaseIncidentExtractor } from './services/ai/firebaseExtractor'
 import { initFirebase } from './services/firebase/app'
 import { createFirebaseAuthService } from './services/firebase/authService'
 import { createFirestoreIncidentSyncAdapter } from './services/firebase/incidentSyncAdapter'
@@ -31,6 +32,7 @@ try {
     waterPointCache: createIdbWaterPointCache(database),
     incidentOutbox: createIdbIncidentOutbox(database),
     incidentSync: createFirestoreIncidentSyncAdapter(firebase.db),
+    incidentExtractor: createFirebaseIncidentExtractor(firebase.app),
   }
   root.render(
     <StrictMode>

@@ -6,7 +6,7 @@
     "moduleResolution": "nodenext",
     "types": ["node"],
     "outDir": "lib",
-    "rootDir": "src",
+    "rootDir": "..",
     "sourceMap": true,
     "strict": true,
     "noUnusedLocals": true,
@@ -17,5 +17,5 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src"]
+  "include": ["src", "../shared"]
 }

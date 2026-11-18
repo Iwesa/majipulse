@@ -228,3 +228,46 @@ describe('report detail and edit', () => {
     expect(within(heading).getByText(/Leak: Mwamanga Borehole \(fictional\)/)).toBeInTheDocument()
   })
 })
+
+describe('AI suggestions on the report pages (T6.5, T6.6)', () => {
+  const ai = {
+    suggested: { incidentType: 'low_flow' as const, severity: null, occurredAt: null, locationNote: null },
+    inferenceSource: 'in_cloud' as const,
+    model: 'gemini-3.5-flash-lite',
+    generatedAt: '2026-03-01T08:00:00.000Z',
+  }
+
+  it('a new report saves the AI block and the accepted value on this device', async () => {
+    const extract = vi.fn(async () => ({ ok: true as const, suggestion: ai, dropped: [] }))
+    renderApp('/reports/new', {
+      auth: new FakeAuthService(signedIn('reporter')),
+      incidentOutbox: outbox,
+      incidentExtractor: { extract },
+    })
+    fireEvent.change(await screen.findByLabelText(new RegExp(`^${en.reports.fields.waterPoint}`)), { target: { value: 'wp-soko' } })
+    fireEvent.change(field(en.reports.fields.description), { target: { value: 'Very little water at the kiosk (fictional).' } })
+    fireEvent.click(screen.getByRole('button', { name: en.ai.suggest }))
+    fireEvent.click(screen.getByRole('button', { name: en.ai.send }))
+    fireEvent.click(await screen.findByRole('button', { name: `${en.ai.use}: ${en.reports.fields.incidentType}` }))
+    fireEvent.click(screen.getByRole('button', { name: en.reports.save }))
+
+    expect(await screen.findByText(en.reports.savedNew)).toBeInTheDocument()
+    const [saved] = await outbox.forScope(REPORTER).list()
+    expect(saved).toMatchObject({ incidentType: 'low_flow', ai, confirmedFields: ['incidentType'], syncStatus: 'pending' })
+    expect(extract).toHaveBeenCalledOnce()
+    // The detail page shows the recorded source.
+    expect(screen.getByText(new RegExp(en.ai.source.in_cloud))).toBeInTheDocument()
+  })
+
+  it('the detail page says when AI was not used', async () => {
+    const record = await seed()
+    render(`/reports/${record.id}`)
+    expect(await screen.findByText(en.ai.detailNone)).toBeInTheDocument()
+  })
+
+  it('no extractor: no AI button, manual reporting only', async () => {
+    render('/reports/new')
+    await screen.findByLabelText(new RegExp(`^${en.reports.fields.waterPoint}`))
+    expect(screen.queryByRole('button', { name: en.ai.suggest })).not.toBeInTheDocument()
+  })
+})

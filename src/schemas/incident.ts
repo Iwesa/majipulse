@@ -40,8 +40,8 @@ export const LOCATION_NOTE_MAX = 300
 export const extractableFieldSchema = z.enum(['incidentType', 'severity', 'occurredAt', 'locationNote'])
 export type ExtractableField = z.infer<typeof extractableFieldSchema>
 
-/** Inference source exactly as reported by the Firebase AI Logic SDK. */
-export const inferenceSourceSchema = z.enum(['ON_DEVICE', 'IN_CLOUD'])
+/** Inference source exactly as reported by the Firebase AI Logic SDK (`InferenceSource.ON_DEVICE` is 'on_device'). */
+export const inferenceSourceSchema = z.enum(['on_device', 'in_cloud'])
 
 /** Suggested values. Every field is nullable: absent facts stay null (R4.6). */
 export const suggestedFieldsSchema = z.strictObject({

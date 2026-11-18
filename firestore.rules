@@ -180,13 +180,20 @@ service cloud.firestore {
         && d.demo is bool;
     }
 
+    // AI suggestion with provenance. Suggested times stay ISO strings (proposals, not incident facts).
     function validAi(ai) {
       return ai is map
         && ai.keys().hasAll(['suggested', 'inferenceSource', 'model', 'generatedAt'])
         && ai.keys().hasOnly(['suggested', 'inferenceSource', 'model', 'generatedAt'])
         && ai.suggested is map
+        && ai.suggested.keys().hasAll(['incidentType', 'severity', 'occurredAt', 'locationNote'])
         && ai.suggested.keys().hasOnly(['incidentType', 'severity', 'occurredAt', 'locationNote'])
-        && ai.inferenceSource in ['ON_DEVICE', 'IN_CLOUD']
+        && (ai.suggested.incidentType == null
+          || ai.suggested.incidentType in ['no_water', 'low_flow', 'leak', 'water_quality_concern', 'pump_or_equipment_issue', 'other'])
+        && (ai.suggested.severity == null || ai.suggested.severity in ['low', 'medium', 'high'])
+        && (ai.suggested.occurredAt == null || text(ai.suggested.occurredAt, 20, 40))
+        && (ai.suggested.locationNote == null || text(ai.suggested.locationNote, 1, 300))
+        && ai.inferenceSource in ['on_device', 'in_cloud']
         && text(ai.model, 1, 100)
         && ai.generatedAt is timestamp;
     }

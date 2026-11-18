@@ -131,6 +131,12 @@ export function ReportDetailPage() {
                 <dd>{record.occurredAt ? formatDateTime(record.occurredAt) : f.notRecorded}</dd>
                 <dt className="font-medium">{f.locationNote}</dt>
                 <dd>{record.locationNote ?? f.notRecorded}</dd>
+                <dt className="font-medium">{en.ai.detailLabel}</dt>
+                <dd>
+                  {record.ai
+                    ? format(en.ai.detailUsed, { source: en.ai.source[record.ai.inferenceSource], time: formatDateTime(record.ai.generatedAt) })
+                    : en.ai.detailNone}
+                </dd>
                 <dt className="font-medium">{f.createdAt}</dt>
                 <dd>{formatDateTime(record.clientCreatedAt)}</dd>
               </dl>

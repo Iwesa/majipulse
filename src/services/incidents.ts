@@ -1,5 +1,5 @@
 /** Local incident outbox types shared by the IndexedDB repository, store, UI, and tests. */
-import type { IncidentStatus } from '../schemas/incident'
+import type { AiSuggestion, IncidentStatus } from '../schemas/incident'
 import type { LocalIncidentRecord } from '../schemas/localIncident'
 import type { SessionScope } from '../schemas/roles'
 
@@ -12,6 +12,8 @@ export interface IncidentContent {
   /** ISO 8601 with offset. */
   occurredAt?: string
   locationNote?: string
+  /** Latest validated AI suggestion with provenance (R4.2). Suggestions are applied to fields only when the reporter accepts them. */
+  ai?: AiSuggestion
 }
 
 export type IncidentOutboxErrorKind = 'alreadyExists' | 'notFound' | 'notEditable' | 'invalid' | 'storage'

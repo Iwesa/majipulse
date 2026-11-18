@@ -10,7 +10,7 @@
       "source": "functions",
       "codebase": "default",
       "runtime": "nodejs22",
-      "ignore": ["node_modules", ".git", "src", "test", "lib/scripts", "lib/seed", "*.log", "*.local", "tsconfig*.json"],
+      "ignore": ["node_modules", ".git", "test", "lib/functions/src/scripts", "lib/functions/src/seed", "*.log", "*.local", "tsconfig*.json"],
       "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
     }
   ],

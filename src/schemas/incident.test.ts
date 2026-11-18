@@ -132,12 +132,12 @@ describe('AI extraction payloads', () => {
     expect(aiExtractionOutputSchema.safeParse({ ...output, [key]: value }).success).toBe(false)
   })
   it('accepts a stored suggestion with an SDK inference source', () => {
-    const suggestion = { suggested: output, inferenceSource: 'ON_DEVICE', model: 'test-model', generatedAt: T0 }
+    const suggestion = { suggested: output, inferenceSource: 'on_device', model: 'test-model', generatedAt: T0 }
     expect(aiSuggestionSchema.safeParse(suggestion).success).toBe(true)
-    expect(aiSuggestionSchema.safeParse({ ...suggestion, inferenceSource: 'IN_CLOUD' }).success).toBe(true)
+    expect(aiSuggestionSchema.safeParse({ ...suggestion, inferenceSource: 'in_cloud' }).success).toBe(true)
   })
   it('rejects unknown inference sources and extra keys in stored suggestions', () => {
-    const suggestion = { suggested: output, inferenceSource: 'ON_DEVICE', model: 'test-model', generatedAt: T0 }
+    const suggestion = { suggested: output, inferenceSource: 'on_device', model: 'test-model', generatedAt: T0 }
     expect(aiSuggestionSchema.safeParse({ ...suggestion, inferenceSource: 'HYBRID' }).success).toBe(false)
     expect(aiSuggestionSchema.safeParse({ ...suggestion, suggested: { ...output, cause: 'x' } }).success).toBe(false)
   })

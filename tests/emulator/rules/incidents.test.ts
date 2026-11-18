@@ -34,6 +34,7 @@ import {
 
 const NEW_ID = '7d5e6f7a-4b5c-4d8e-9f0a-2b3c4d5e6f7a'
 const UNUSED_ID = '8e6f7a8b-5c6d-4e9f-8a1b-3c4d5e6f7a8b'
+const SUGGESTED = { incidentType: 'no_water', severity: null, occurredAt: null, locationNote: null }
 
 let env: RulesTestEnvironment
 
@@ -84,13 +85,37 @@ describe('create', () => {
     await assertSucceeds(setDoc(doc(as(env, UID.reporterA), 'incidents', NEW_ID), newIncident(UID.reporterA)))
   })
   it('optional fields and a validated AI block are accepted', async () => {
-    const ai = { suggested: { incidentType: 'no_water', severity: null }, inferenceSource: 'ON_DEVICE', model: 'test', generatedAt: T }
+    const ai = { suggested: SUGGESTED, inferenceSource: 'on_device', model: 'test', generatedAt: T }
     await assertSucceeds(
       setDoc(
         doc(as(env, UID.reporterA), 'incidents', NEW_ID),
         newIncident(UID.reporterA, { occurredAt: T, locationNote: 'By the trough', ai, confirmedFields: ['incidentType'] }),
       ),
     )
+  })
+  it('accepts a cloud AI block with every suggested field set (T6.6)', async () => {
+    const suggested = { incidentType: 'leak', severity: 'high', occurredAt: '2026-03-12T00:00:00.000Z', locationNote: 'near the gate' }
+    await assertSucceeds(
+      setDoc(
+        doc(as(env, UID.reporterA), 'incidents', NEW_ID),
+        newIncident(UID.reporterA, { ai: { suggested, inferenceSource: 'in_cloud', model: 'gemini-3.5-flash-lite', generatedAt: T } }),
+      ),
+    )
+  })
+  const aiWith = (suggested: Record<string, unknown>) => ({
+    ai: { suggested: { ...SUGGESTED, ...suggested }, inferenceSource: 'in_cloud', model: 'm', generatedAt: T },
+  })
+  it.each([
+    ['missing suggested fields', { ai: { suggested: { incidentType: 'leak' }, inferenceSource: 'in_cloud', model: 'm', generatedAt: T } }],
+    ['an unknown suggested field', aiWith({ cause: 'worn seal' })],
+    ['an unknown suggested type', aiWith({ incidentType: 'burst' })],
+    ['an unknown suggested severity', aiWith({ severity: 'critical' })],
+    ['an overlong suggested location', aiWith({ locationNote: 'x'.repeat(301) })],
+    ['a non-string suggested time', aiWith({ occurredAt: 5 })],
+    ['an upper-case inference source', { ai: { suggested: SUGGESTED, inferenceSource: 'IN_CLOUD', model: 'm', generatedAt: T } }],
+    ['a missing model', { ai: { suggested: SUGGESTED, inferenceSource: 'in_cloud', generatedAt: T } }],
+  ])('denies an AI block with %s (T6.6)', async (_label, overrides) => {
+    await assertFails(setDoc(doc(as(env, UID.reporterA), 'incidents', NEW_ID), newIncident(UID.reporterA, overrides)))
   })
   it.each([
     ['another organization', { organizationId: ORG_B }],

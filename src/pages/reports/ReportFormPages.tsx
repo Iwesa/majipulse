@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useIncidents, useSession, useSync, useWaterPoints } from '../../app/servicesContext'
+import { useIncidents, useServices, useSession, useSync, useWaterPoints } from '../../app/servicesContext'
 import { IncidentForm } from '../../components/incidents/IncidentForm'
 import { Alert, AsyncBoundary, EmptyState, Spinner } from '../../components/ui'
 import { SavedCopyNotice } from '../../components/waterPoints/WaterPointBits'
@@ -43,6 +43,7 @@ const back = (
 /** New report (T4.3). Saves to this device only; works offline once the app is loaded. */
 export function NewReportPage() {
   const session = useSession((s) => s.session)
+  const extractor = useServices().incidentExtractor
   const saveNew = useIncidents((s) => s.saveNew)
   const requestSync = useSync((s) => s.requestSync)
   const navigate = useNavigate()
@@ -68,7 +69,7 @@ export function NewReportPage() {
       {back}
       <h1 className="text-2xl font-bold text-slate-900">{en.nav.newReport}</h1>
       {failure && <Alert tone="error">{en.reports.errors[failure]}</Alert>}
-      <WithWaterPoints>{(points) => <IncidentForm waterPoints={points} onSubmit={submit} />}</WithWaterPoints>
+      <WithWaterPoints>{(points) => <IncidentForm waterPoints={points} onSubmit={submit} extractor={extractor} />}</WithWaterPoints>
     </div>
   )
 }
@@ -77,6 +78,7 @@ export function NewReportPage() {
 export function EditReportPage() {
   const { incidentId = '' } = useParams()
   const session = useSession((s) => s.session)
+  const extractor = useServices().incidentExtractor
   const list = useIncidents((s) => s.list)
   const saveEdit = useIncidents((s) => s.saveEdit)
   const requestSync = useSync((s) => s.requestSync)
@@ -117,7 +119,16 @@ export function EditReportPage() {
             <>
               {failure && <Alert tone="error">{en.reports.errors[failure]}</Alert>}
               <WithWaterPoints>
-                {(points) => <IncidentForm key={record.mutationId} waterPoints={points} initial={contentOf(record)} onSubmit={submit} />}
+                {(points) => (
+                  <IncidentForm
+                    key={record.mutationId}
+                    waterPoints={points}
+                    initial={contentOf(record)}
+                    confirmedFields={record.confirmedFields}
+                    onSubmit={submit}
+                    extractor={extractor}
+                  />
+                )}
               </WithWaterPoints>
             </>
           )

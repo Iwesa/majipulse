@@ -6,8 +6,9 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
     "lib": ["ES2023", "DOM"],
     "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.functions-test.tsbuildinfo"
   },
-  "include": ["src", "test"]
+  "include": ["src", "test", "../shared"]
 }

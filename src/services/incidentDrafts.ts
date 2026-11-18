@@ -61,6 +61,19 @@ export function applySuggestedFields(
   return next
 }
 
+/**
+ * Suggested fields the reporter can still review: the suggestion has a value
+ * and the reporter has not confirmed the field. Same rule as
+ * applySuggestedFields, used when suggestions are applied one by one.
+ */
+export function reviewableSuggestions(
+  suggested: Partial<SuggestedFields>,
+  confirmed: readonly ExtractableField[],
+): ExtractableField[] {
+  const order: ExtractableField[] = ['incidentType', 'severity', 'occurredAt', 'locationNote']
+  return order.filter((field) => !confirmed.includes(field) && suggested[field] !== null && suggested[field] !== undefined)
+}
+
 const contentFields = (content: IncidentContent) => ({
   waterPointId: content.waterPointId,
   description: content.description,
@@ -68,6 +81,7 @@ const contentFields = (content: IncidentContent) => ({
   severity: content.severity,
   ...(content.occurredAt !== undefined ? { occurredAt: content.occurredAt } : {}),
   ...(content.locationNote !== undefined ? { locationNote: content.locationNote } : {}),
+  ...(content.ai !== undefined ? { ai: content.ai } : {}),
 })
 
 function validated(record: LocalIncidentRecord): LocalIncidentRecord {
@@ -118,12 +132,14 @@ export function applyLocalEdit(
   const {
     occurredAt: _o,
     locationNote: _l,
+    ai: _a,
     failureKind: _f,
     lastError: _e,
     ...rest
   } = record
   void _o
   void _l
+  void _a
   void _f
   void _e
   return validated({
@@ -146,5 +162,6 @@ export function contentOf(record: LocalIncidentRecord): IncidentContent {
     severity: record.severity,
     ...(record.occurredAt !== undefined ? { occurredAt: record.occurredAt } : {}),
     ...(record.locationNote !== undefined ? { locationNote: record.locationNote } : {}),
+    ...(record.ai !== undefined ? { ai: record.ai } : {}),
   }
 }

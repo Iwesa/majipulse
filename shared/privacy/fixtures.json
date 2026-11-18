@@ -1,0 +1,70 @@
+{
+  "$comment": "Shared redactor fixtures (FICTIONAL values), run by the app and the functions test suites. Each case: input, exact expected output, and the kinds found.",
+  "redacts": [
+    { "input": "Call 0712345678 now.", "expected": "Call [PHONE] now.", "kinds": ["phone"] },
+    { "input": "Call 0712 345 678 now.", "expected": "Call [PHONE] now.", "kinds": ["phone"] },
+    { "input": "Call 0712-345-678 now.", "expected": "Call [PHONE] now.", "kinds": ["phone"] },
+    { "input": "Call 0712.345.678 now.", "expected": "Call [PHONE] now.", "kinds": ["phone"] },
+    { "input": "Call +254712345678 now.", "expected": "Call [PHONE] now.", "kinds": ["phone"] },
+    { "input": "Call +254 712 345 678 now.", "expected": "Call [PHONE] now.", "kinds": ["phone"] },
+    { "input": "Call 254712345678 now.", "expected": "Call [PHONE] now.", "kinds": ["phone"] },
+    { "input": "Call (+254) 712 345678 now.", "expected": "Call [PHONE] now.", "kinds": ["phone"] },
+    { "input": "Call 0110123456 now.", "expected": "Call [PHONE] now.", "kinds": ["phone"] },
+    { "input": "Call 0110 123 456 now.", "expected": "Call [PHONE] now.", "kinds": ["phone"] },
+    { "input": "Call +254 110 123 456 now.", "expected": "Call [PHONE] now.", "kinds": ["phone"] },
+    { "input": "Call 0701 234 567 now.", "expected": "Call [PHONE] now.", "kinds": ["phone"] },
+
+    { "input": "Email amina.otieno@example.org today.", "expected": "Email [EMAIL] today.", "kinds": ["email"] },
+    { "input": "Write to j.mwangi+water@mail.kwale.example.org.", "expected": "Write to [EMAIL].", "kinds": ["email"] },
+    { "input": "Write to name at gmail dot com please.", "expected": "Write to [EMAIL] please.", "kinds": ["email"] },
+    { "input": "Reach me at amina at gmail dot co dot ke today.", "expected": "Reach me at [EMAIL] today.", "kinds": ["email"] },
+
+    { "input": "my name is Amina Otieno and the tap is dry.", "expected": "my name is [NAME] and the tap is dry.", "kinds": ["name"] },
+    { "input": "My Name Is amina otieno, the tap is dry.", "expected": "My Name Is [NAME], the tap is dry.", "kinds": ["name"] },
+    { "input": "name: J. Mwangi, the pump leaks.", "expected": "name: [NAME], the pump leaks.", "kinds": ["name"] },
+    { "input": "I am called Rehema. The kiosk is closed.", "expected": "I am called [NAME]. The kiosk is closed.", "kinds": ["name"] },
+    { "input": "contact Juma Hamisi for the key.", "expected": "contact [NAME] for the key.", "kinds": ["name"] },
+    { "input": "jina langu ni Baraka. Maji hakuna.", "expected": "jina langu ni [NAME]. Maji hakuna.", "kinds": ["name"] },
+    { "input": "naitwa Zawadi, bomba limevunjika.", "expected": "naitwa [NAME], bomba limevunjika.", "kinds": ["name"] },
+    { "input": "call me on 0712345678 if it gets worse.", "expected": "call me on [PHONE] if it gets worse.", "kinds": ["phone"] },
+    { "input": "call me Juma.", "expected": "call me [NAME].", "kinds": ["name"] },
+
+    { "input": "ID number 12345678 is mine.", "expected": "ID number [ID] is mine.", "kinds": ["id"] },
+    { "input": "My national ID 2345678.", "expected": "My national ID [ID].", "kinds": ["id"] },
+    { "input": "kitambulisho 3456789.", "expected": "kitambulisho [ID].", "kinds": ["id"] },
+    { "input": "ID no. 23456789 attached.", "expected": "ID no. [ID] attached.", "kinds": ["id"] },
+    { "input": "passport AK1234567 copy.", "expected": "passport [ID] copy.", "kinds": ["id"] },
+
+    { "input": "Mr Kahindi fixed it before.", "expected": "Mr [NAME] fixed it before.", "kinds": ["name"] },
+    { "input": "Mama Rehema Said reported it.", "expected": "Mama [NAME] reported it.", "kinds": ["name"] },
+    { "input": "Ask Mzee Omari at the gate.", "expected": "Ask Mzee [NAME] at the gate.", "kinds": ["name"] },
+    { "input": "Dr. Achieng tested it.", "expected": "Dr. [NAME] tested it.", "kinds": ["name"] },
+
+    { "input": "Meter 123456789 is broken.", "expected": "Meter [NUMBER] is broken.", "kinds": ["number"] },
+    { "input": "Account 123 456 789 012 is overdue.", "expected": "Account [NUMBER] is overdue.", "kinds": ["number"] },
+    { "input": "Token 4321-8765-1234 was used.", "expected": "Token [NUMBER] was used.", "kinds": ["number"] },
+
+    {
+      "input": "My name is Amina, call 0712 345 678 or amina@example.org. Mr Kahindi has ID number 12345678.",
+      "expected": "My name is [NAME], call [PHONE] or [EMAIL]. Mr [NAME] has ID number [ID].",
+      "kinds": ["name", "phone", "email", "name", "id"]
+    }
+  ],
+  "unchanged": [
+    "pump broken since 3 days",
+    "tap 2 leaking",
+    "about 200 litres lost",
+    "open 7am to 9am",
+    "borehole 14 is dry",
+    "since 12/03/2026",
+    "since 2026-03-12 10:30",
+    "near the Mama mboga stall",
+    "Mzee said the tank is empty.",
+    "The kiosk opens 0600 to 1800.",
+    "Water stopped at 10:30 on 12/03/2026, about 200 litres lost.",
+    "Contact the water office about the leak.",
+    "The handpump at Mwamanga Borehole gives very little water.",
+    "Maji yanavuja karibu na tanki la lita 5000.",
+    "Pressure dropped from 3 bar to 1 bar."
+  ]
+}

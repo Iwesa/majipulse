@@ -58,7 +58,7 @@ Mirrors the custom claims `{ organizationId, role }`. Claims are the authority f
 - `status`: `new | triaged | in_progress | resolved`. `lastStatusChange: { by, at, from, to }`.
 - Revision fields (section 6): `serverRevision`, `baseRevision`, `clientRevision`, `mutationId`.
 - `clientCreatedAt` (ISO), `createdAt`, `updatedAt`.
-- `ai` (optional): `{ suggested: {...nullable fields}, inferenceSource: 'ON_DEVICE' | 'IN_CLOUD', model, generatedAt }`. Stored only after validation.
+- `ai` (optional): `{ suggested: {...nullable fields}, inferenceSource: 'on_device' | 'in_cloud', model, generatedAt }`. Stored only after validation.
 - `confirmedFields`: field names the reporter accepted or edited.
 
 ### `maintenanceTasks/{taskId}`
@@ -83,7 +83,7 @@ All access goes through a repository constructed with a `SessionScope { organiza
 ### Privacy preprocessing (applies to both workflows)
 Omitting `reporterId` does not keep personal information away from AI, because reporters can type names, phone numbers, or ID numbers into the description. Every free-text value goes through a redaction step before any model sees it. Redaction is best-effort, and the design does not claim it catches everything.
 
-**Redactor:** `shared/privacy/redact.ts`, a dependency-free TypeScript module used by both `src/services/ai` and `functions/src` (the functions build includes `../shared`) **[verify build wiring in T6.2]**. Shared fixtures: `shared/privacy/fixtures.json`, run by both test suites.
+**Redactor:** `shared/privacy/redact.ts`, a dependency-free TypeScript module used by both `src/services/ai` and `functions/src` (the functions build includes `../shared`) [verified in T6.1b: `functions/tsconfig.json` uses `rootDir: ".."` and includes `../shared`]. Shared fixtures: `shared/privacy/fixtures.json`, run by both test suites.
 - Input: text. Output: `{ text, findings: [{ kind, start, end }] }`. Original values are never stored, returned to callers outside the module, or logged. Only counts per kind may be logged.
 - Placeholders: `[PHONE]`, `[EMAIL]`, `[ID]`, `[NAME]`, `[NUMBER]`.
 
@@ -114,14 +114,14 @@ Omitting `reporterId` does not keep personal information away from AI, because r
 Verified API facts (Firebase AI Logic hybrid web docs):
 - `getAI(app, { backend: new GoogleAIBackend() })` and `getGenerativeModel(ai, { mode: InferenceMode.PREFER_ON_DEVICE })` from `firebase/ai`. Cloud model overridable with `inCloudParams`.
 - `model.initializeDeviceModel()` must be called on or after a user interaction and before the request. In `PREFER_ON_DEVICE`, requests made before the model has downloaded fall back to cloud.
-- `result.response.inferenceSource` returns `ON_DEVICE` or `IN_CLOUD` (SDK 12.5.0+; installed is 13.3.0).
+- `result.response.inferenceSource` returns `InferenceSource.ON_DEVICE` or `InferenceSource.IN_CLOUD`, whose values are the strings `'on_device'` and `'in_cloud'` (verified in the SDK 13.3.0 types; see docs/ai-logic-notes.md).
 - On-device inference requires Chrome desktop 139+ with the Prompt API flag enabled. Elsewhere the cloud model is used. Structured output (JSON) is supported on-device.
 - The AI Logic console setup enforces App Check for AI Logic.
 
 Flow:
 1. Reporter presses "Suggest fields". The app shows the privacy preview (above). On "Send", the click handler calls `initializeDeviceModel()` and then sends the request. (The "Send" click is the user activation the device model needs.)
 2. The prompt includes only the **redacted** description and the water-point name, inside a delimited data block. Instructions: extract only stated facts, use null when unstated, never infer causes or locations, never restore placeholders.
-3. Request a JSON response schema **[verify exact structured-output config for hybrid in T6.1]**.
+3. Request a JSON response schema: `inCloudParams.generationConfig` (`responseMimeType`, `responseSchema`) and `onDeviceParams.promptOptions.responseConstraint` [verified in T6.1, docs/ai-logic-notes.md].
 4. Store `response.inferenceSource` exactly as returned.
 5. Parse with Zod. Reject malformed JSON, unknown enums, overlong strings. Strip extra keys.
 6. Grounding check: extracted location or time text must appear in the description (normalized substring), otherwise it is dropped.

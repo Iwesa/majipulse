@@ -14,7 +14,7 @@ const OWNER = { Authorization: 'Bearer owner', 'Content-Type': 'application/json
 export async function resetAndSeed(): Promise<void> {
   await fetch(`http://127.0.0.1:8080/emulator/v1/projects/${PROJECT}/databases/(default)/documents`, { method: 'DELETE' })
   await fetch(`http://127.0.0.1:9099/emulator/v1/projects/${PROJECT}/accounts`, { method: 'DELETE' })
-  execFileSync(process.execPath, ['functions/lib/scripts/seed-demo.js', '--project', PROJECT, '--confirm-project', PROJECT, '--emulator'], {
+  execFileSync(process.execPath, ['functions/lib/functions/src/scripts/seed-demo.js', '--project', PROJECT, '--confirm-project', PROJECT, '--emulator'], {
     env: { ...process.env, MAJIPULSE_DEMO_PASSWORD: PASSWORD },
     stdio: 'inherit',
   })

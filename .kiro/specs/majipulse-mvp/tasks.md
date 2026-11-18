@@ -119,23 +119,23 @@ Markers: **[approval]** needs your approval (dependency, console, or billing act
 
 ## Phase 6: AI-assisted extraction
 
-- [ ] **T6.1 Confirm AI Logic details.** Record in `docs/ai-logic-notes.md`: structured output config in hybrid mode, `initializeDeviceModel` usage, error types. Core API facts are already verified (design section 5A). **[verify]**
+- [x] **T6.1 Confirm AI Logic details.** Record in `docs/ai-logic-notes.md`: structured output config in hybrid mode, `initializeDeviceModel` usage, error types. Core API facts are already verified (design section 5A). **[verify]**
   *Test:* you review the notes.
-- [ ] **T6.1b Privacy redactor (shared).** `shared/privacy/redact.ts` and `shared/privacy/fixtures.json` per design "Privacy preprocessing". Wire `shared/` into the app and `functions/` builds **[verify]**.
+- [x] **T6.1b Privacy redactor (shared).** `shared/privacy/redact.ts` and `shared/privacy/fixtures.json` per design "Privacy preprocessing". Wire `shared/` into the app and `functions/` builds **[verify]**.
   *Test:* fixtures run in both test suites. Kenyan phones: `0712345678`, `0712 345 678`, `0712-345-678`, `0712.345.678`, `+254712345678`, `+254 712 345 678`, `254712345678`, `(+254) 712 345678`, `0110123456`, `0110 123 456`, `+254 110 123 456`. Emails: standard, with subdomains and `+` tags, spelled out (`name at gmail dot com`). Explicit identifiers: "my name is Amina Otieno", "name: J. Mwangi", "jina langu ni Baraka", "naitwa Zawadi", "ID number 12345678", "national ID 2345678", "kitambulisho 3456789", "call me on ...". Titled names: "Mr Kahindi", "Mama Rehema Said". Long numbers: 9+ digits. Negatives (unchanged): "pump broken since 3 days", "tap 2 leaking", "200 litres", "7am to 9am", "borehole 14", dates and times like "12/03/2026" and "2026-03-12 10:30", "Mama mboga stall" (lowercase after title). Output contains only placeholders, never originals. Refs: R4.8, AC21.
-- [ ] **T6.2 Extraction schema and validator.** Zod, grounding check (against redacted text), strip unknown keys, placeholder and detector echo rejection.
+- [x] **T6.2 Extraction schema and validator.** Zod, grounding check (against redacted text), strip unknown keys, placeholder and detector echo rejection.
   *Test:* fixtures: malformed JSON, invented location, unknown enum, overlong text, output containing `[PHONE]`, output containing a phone number or email. Refs: R4.3, R4.6, R4.10, AC9, AC21.
-- [ ] **T6.3 Prompt builder.** Delimited data block, redacted description and water-point name only.
+- [x] **T6.3 Prompt builder.** Delimited data block, redacted description and water-point name only.
   *Test:* snapshot and injection-text fixtures. A description with a phone, email, and "my name is" produces a prompt containing only placeholders (asserted on the built prompt). Refs: S7, S8, R4.8, AC21.
-- [ ] **T6.4 Extraction service.** Wraps `firebase/ai`, timeout, typed success with `inferenceSource` or typed failure.
+- [x] **T6.4 Extraction service.** Wraps `firebase/ai`, timeout, typed success with `inferenceSource` or typed failure.
   *Test:* mocked SDK: `ON_DEVICE`, `IN_CLOUD`, timeout, unavailable, invalid output. Refs: R4.1, R4.2, R4.7.
-- [ ] **T6.4b Privacy preview.** Description help text, preview of the redacted text with marked removals, warning about undetected details, send, edit first, and cancel actions.
+- [x] **T6.4b Privacy preview.** Description help text, preview of the redacted text with marked removals, warning about undetected details, send, edit first, and cancel actions.
   *Test:* component tests: no AI call until "Send"; "Cancel" makes no call and manual entry works; "Edit description first" returns focus and rebuilds the preview; preview never shows the original removed values; warning text present and announced. Refs: R4.9, AC21.
-- [ ] **T6.5 Review panel.** Per-field accept or edit, source label, unavailable message.
+- [x] **T6.5 Review panel.** Per-field accept or edit, source label, unavailable message.
   *Test:* component tests, re-run preserves confirmed fields. Refs: R4.4, R4.5, AC7, AC8.
-- [ ] **T6.6 Store AI provenance.** `ai` block and `confirmedFields` saved and synced. Rules updated if needed.
+- [x] **T6.6 Store AI provenance.** `ai` block and `confirmedFields` saved and synced. Rules updated if needed.
   *Test:* unit and rules tests.
-- [ ] **T6.7 Playwright: AI unavailable.**
+- [x] **T6.7 Playwright: AI unavailable.**
   *Test:* E2E with AI mocked as failing. Refs: R4.7.
 
 ## Phase 7: Triage and maintenance

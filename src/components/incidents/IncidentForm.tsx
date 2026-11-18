@@ -1,11 +1,23 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
-import { DESCRIPTION_MAX, LOCATION_NOTE_MAX, incidentTypeSchema, severitySchema } from '../../schemas/incident'
+import {
+  DESCRIPTION_MAX,
+  LOCATION_NOTE_MAX,
+  extractableFieldSchema,
+  incidentTypeSchema,
+  severitySchema,
+  type AiSuggestion,
+  type ExtractableField,
+} from '../../schemas/incident'
 import type { WaterPointRecord } from '../../schemas/waterPoint'
+import type { IncidentExtractor } from '../../services/ai/types'
+import { confirmedFieldsFor, mergeConfirmedFields } from '../../services/incidentDrafts'
 import type { IncidentContent } from '../../services/incidents'
 import { en } from '../../strings/en'
 import { Button, SelectField, TextArea, TextField } from '../ui'
+import { AiAssist } from './AiAssist'
 
 const v = en.reports.validation
 const NOT_SURE = ''
@@ -34,14 +46,17 @@ type Schema = ReturnType<typeof formSchema>
 type FormInput = z.input<Schema>
 type FormOutput = z.output<Schema>
 
-const toContent = (values: FormOutput): IncidentContent => ({
+const toContent = (values: FormOutput, ai: AiSuggestion | undefined): IncidentContent => ({
   waterPointId: values.waterPointId,
   description: values.description,
   incidentType: values.incidentType,
   severity: values.severity === NOT_SURE ? null : values.severity,
   ...(values.occurredAt ? { occurredAt: fromLocalInput(values.occurredAt) } : {}),
   ...(values.locationNote ? { locationNote: values.locationNote } : {}),
+  ...(ai ? { ai } : {}),
 })
+
+const EXTRACTABLE = extractableFieldSchema.options
 
 const TYPE_OPTIONS = incidentTypeSchema.options.map((value) => ({ value, label: en.incidentTypes[value] }))
 const SEVERITY_OPTIONS = [
@@ -52,18 +67,28 @@ const SEVERITY_OPTIONS = [
 interface IncidentFormProps {
   waterPoints: readonly WaterPointRecord[]
   initial?: IncidentContent
+  /** Fields the reporter confirmed in earlier saves (edit only). */
+  confirmedFields?: readonly ExtractableField[]
   onSubmit(content: IncidentContent): Promise<void>
+  /** AI field suggestions. Without it the form is manual only. */
+  extractor?: IncidentExtractor
   now?: () => Date
 }
 
 /**
  * Manual report entry (T4.3). Needs no connection: it only reads the water
- * points already on this device and hands the content to the caller.
+ * points already on this device and hands the content to the caller. With
+ * an `extractor`, the reporter can also ask for AI suggestions (T6.4b, T6.5).
  */
-export function IncidentForm({ waterPoints, initial, onSubmit, now = () => new Date() }: IncidentFormProps) {
+export function IncidentForm({ waterPoints, initial, confirmedFields, onSubmit, extractor, now = () => new Date() }: IncidentFormProps) {
+  // Latest validated AI suggestion, saved with the report as provenance.
+  const [ai, setAi] = useState<AiSuggestion | undefined>(initial?.ai)
   const {
     register,
     handleSubmit,
+    control,
+    setValue,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(formSchema(now)),
@@ -83,8 +108,31 @@ export function IncidentForm({ waterPoints, initial, onSubmit, now = () => new D
     pointOptions.push({ value: initial.waterPointId, label: en.reports.unknownWaterPoint })
   }
 
+  const current = useWatch({ control })
+  // Fields that have a value now (entered or accepted by the reporter) or were
+  // confirmed in an earlier save. AI suggestions are never proposed for them (R4.5).
+  const hasValue: Record<ExtractableField, boolean> = {
+    incidentType: Boolean(current.incidentType),
+    severity: Boolean(current.severity) && current.severity !== NOT_SURE,
+    occurredAt: Boolean(current.occurredAt),
+    locationNote: Boolean(current.locationNote?.trim()),
+  }
+  const confirmedNow = mergeConfirmedFields(
+    confirmedFields ?? (initial ? confirmedFieldsFor(initial) : []),
+    EXTRACTABLE.filter((field) => hasValue[field]),
+  )
+
+  const acceptSuggestion = (field: ExtractableField, s: AiSuggestion['suggested'], thenEdit: boolean) => {
+    const options = { shouldDirty: true, shouldValidate: true }
+    if (field === 'incidentType' && s.incidentType) setValue('incidentType', s.incidentType, options)
+    if (field === 'severity' && s.severity) setValue('severity', s.severity, options)
+    if (field === 'occurredAt' && s.occurredAt) setValue('occurredAt', toLocalInput(s.occurredAt), options)
+    if (field === 'locationNote' && s.locationNote) setValue('locationNote', s.locationNote, options)
+    if (thenEdit) setFocus(field)
+  }
+
   return (
-    <form noValidate onSubmit={handleSubmit((values) => onSubmit(toContent(values)))} className="flex flex-col gap-4">
+    <form noValidate onSubmit={handleSubmit((values) => onSubmit(toContent(values, ai)))} className="flex flex-col gap-4">
       <SelectField
         label={en.reports.fields.waterPoint}
         options={pointOptions}
@@ -101,6 +149,17 @@ export function IncidentForm({ waterPoints, initial, onSubmit, now = () => new D
         error={errors.description?.message}
         {...register('description')}
       />
+      {extractor && (
+        <AiAssist
+          extractor={extractor}
+          description={current.description ?? ''}
+          waterPointName={waterPoints.find((p) => p.id === current.waterPointId)?.name ?? null}
+          confirmed={confirmedNow}
+          onSuggestion={setAi}
+          onUse={acceptSuggestion}
+          onEditDescription={() => setFocus('description')}
+        />
+      )}
       <SelectField
         label={en.reports.fields.incidentType}
         options={TYPE_OPTIONS}

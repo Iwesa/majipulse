@@ -149,6 +149,32 @@ describe('adapter and engine against real rules (T5.1, AC4)', () => {
     expect(data?.locationNote).toBeUndefined()
   })
 
+  it('syncs the AI block and confirmed fields, and reads them back (T6.6)', async () => {
+    const ai = {
+      suggested: { incidentType: 'leak' as const, severity: 'high' as const, occurredAt: null, locationNote: 'near the gate' },
+      inferenceSource: 'in_cloud' as const,
+      model: 'gemini-3.5-flash-lite',
+      generatedAt: '2026-03-01T07:59:00.000Z',
+    }
+    const a = createLocalIncident(crypto.randomUUID(), SCOPE, { ...content, severity: 'high', locationNote: 'near the gate', ai })
+    await repo.create(a)
+    const adapter = adapterFor(reporterDb())
+    const engine = engineWith(adapter)
+    await engine.start()
+    const data = await serverDoc(a.id)
+    expect(data?.confirmedFields).toEqual(['incidentType', 'severity', 'locationNote'])
+    expect(data?.ai).toMatchObject({ inferenceSource: 'in_cloud', model: 'gemini-3.5-flash-lite', suggested: ai.suggested })
+    expect((data?.ai as { generatedAt: unknown }).generatedAt).toBeInstanceOf(Timestamp)
+    expect((await adapter.readServer(a.id))?.ai).toEqual(ai)
+
+    // A later edit with a new on-device suggestion replaces the block.
+    const onDevice = { ...ai, inferenceSource: 'on_device' as const, model: 'chrome-built-in', generatedAt: '2026-03-01T08:30:00.000Z' }
+    await repo.updateWith(a.id, (r) => applyLocalEdit(r, { ...content, description: 'Edited (fictional).', ai: onDevice }, systemClock))
+    await engine.requestSync('save')
+    expect((await adapter.readServer(a.id))?.ai).toEqual(onDevice)
+    expect((await local(a.id)).syncStatus).toBe('synced')
+  })
+
   it('a stale edit is detected in the transaction and becomes a conflict, not retried (AC6)', async () => {
     const a = await save()
     const engine = engineWith(adapterFor(reporterDb()))

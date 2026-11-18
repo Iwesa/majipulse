@@ -8,6 +8,7 @@ import {
   createLocalIncident,
   mergeConfirmedFields,
   newIncidentId,
+  reviewableSuggestions,
   type DraftClock,
 } from './incidentDrafts'
 import { IncidentOutboxError } from './incidents'
@@ -156,5 +157,41 @@ describe('confirmed fields (R4.5)', () => {
       occurredAt: null,
     })
     expect(merged).toEqual({ ...content, severity: 'low', locationNote: 'Near the trough' })
+  })
+})
+
+describe('AI provenance (T6.6)', () => {
+  const ai = {
+    suggested: { incidentType: 'leak' as const, severity: 'high' as const, occurredAt: null, locationNote: null },
+    inferenceSource: 'on_device' as const,
+    model: 'chrome-built-in',
+    generatedAt: '2026-03-01T07:59:00.000Z',
+  }
+
+  it('the first save stores the validated AI block next to the reporter-confirmed values', () => {
+    const record = createLocalIncident(ID, scope, { ...content, severity: 'high', ai }, makeClock())
+    expect(record.ai).toEqual(ai)
+    expect(record.severity).toBe('high')
+    expect(record.confirmedFields).toEqual(['incidentType', 'severity'])
+    expect(contentOf(record).ai).toEqual(ai)
+  })
+
+  it('an edit replaces the AI block with the new one, or removes it', () => {
+    const clock = makeClock()
+    const v1 = createLocalIncident(ID, scope, { ...content, ai }, clock)
+    const newer = { ...ai, inferenceSource: 'in_cloud' as const, model: 'gemini-3.5-flash-lite' }
+    expect(applyLocalEdit(v1, { ...content, ai: newer }, clock).ai).toEqual(newer)
+    expect(applyLocalEdit(v1, content, clock).ai).toBeUndefined()
+  })
+
+  it('rejects an AI block that fails the schema', () => {
+    const bad = { ...ai, inferenceSource: 'ON_DEVICE' } as unknown as typeof ai
+    expect(() => createLocalIncident(ID, scope, { ...content, ai: bad }, makeClock())).toThrow(IncidentOutboxError)
+  })
+
+  it('reviewableSuggestions lists suggested, unconfirmed fields in form order', () => {
+    const suggested = { incidentType: 'leak' as const, severity: 'high' as const, occurredAt: null, locationNote: 'Gate' }
+    expect(reviewableSuggestions(suggested, [])).toEqual(['incidentType', 'severity', 'locationNote'])
+    expect(reviewableSuggestions(suggested, ['incidentType', 'locationNote'])).toEqual(['severity'])
   })
 })

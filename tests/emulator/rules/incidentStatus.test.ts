@@ -106,7 +106,7 @@ describe('a status update may change only status metadata', () => {
     ['description', { description: 'Changed during triage' }],
     ['organizationId', { organizationId: ORG_B }],
     ['reporterId', { reporterId: UID.reporterA2 }],
-    ['ai', { ai: { suggested: {}, inferenceSource: 'IN_CLOUD', model: 'x', generatedAt: T } }],
+    ['ai', { ai: { suggested: {}, inferenceSource: 'in_cloud', model: 'x', generatedAt: T } }],
     ['confirmedFields', { confirmedFields: ['severity'] }],
     ['severity', { severity: 'high' }],
   ]
