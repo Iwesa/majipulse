@@ -13,71 +13,73 @@ Markers: **[approval]** needs your approval (dependency, console, or billing act
 
 ## Phase 0: Foundations
 
-- [ ] **T0.1 Strict TypeScript.** Set `"strict": true` in `tsconfig.app.json` and `tsconfig.node.json`. Fix resulting errors only.
+- [x] **T0.1 Strict TypeScript.** Set `"strict": true` in `tsconfig.app.json` and `tsconfig.node.json`. Fix resulting errors only.
   *Test:* `npm run build` passes.
-- [ ] **T0.2 Secrets hygiene.** Extend `.gitignore` (design section 10). Add `.env.example` with placeholder values only. Add `scripts/check-build.mjs` that fails if `dist/` contains `FIREBASE_APPCHECK_DEBUG_TOKEN`, and a `check:build` script.
+- [x] **T0.2 Secrets hygiene.** Extend `.gitignore` (design section 10). Add `.env.example` with placeholder values only. Add `scripts/check-build.mjs` that fails if `dist/` contains `FIREBASE_APPCHECK_DEBUG_TOKEN`, and a `check:build` script.
   *Test:* script fails on a planted string, passes on a clean build. `git check-ignore .env.local .env.development.local` succeeds. Refs: S6, AC14.
-- [ ] **T0.3 Tailwind setup.** Add `@tailwindcss/vite` to `vite.config.ts`, import Tailwind in `index.css`, remove the Vite template UI.
+- [x] **T0.3 Tailwind setup.** Add `@tailwindcss/vite` to `vite.config.ts`, import Tailwind in `index.css`, remove the Vite template UI.
   *Test:* build passes. Smoke component test.
-- [ ] **T0.4 Test tooling.** Vitest config (jsdom, jest-dom, fake-indexeddb setup), Playwright config, scripts `test`, `test:e2e`. One trivial test each. Uses the already-installed D4 packages.
+- [x] **T0.4 Test tooling.** Vitest config (jsdom, jest-dom, fake-indexeddb setup), Playwright config, scripts `test`, `test:e2e`. One trivial test each. Uses the already-installed D4 packages.
   *Test:* both scripts run.
-- [ ] **T0.5 Folder structure and strings module.** Create the folders in design section 3 and `src/strings/en.ts` with a typed shape.
+- [x] **T0.5 Folder structure and strings module.** Create the folders in design section 3 and `src/strings/en.ts` with a typed shape.
   *Test:* build passes. Unit test that the strings object has no empty values. Refs: R12.1.
-- [ ] **T0.6 Env config module.** `services/firebase/config.ts` reads `VITE_*` values validated with Zod.
+- [x] **T0.6 Env config module.** `services/firebase/config.ts` reads `VITE_*` values validated with Zod.
   *Test:* unit tests for missing and invalid values.
 
 ## Phase 1: Schemas and shared UI
 
-- [ ] **T1.1 Zod schemas.** Organization, member, waterPoint, incident (with revision fields, `ai`, `confirmedFields`), local incident record (with `syncStatus` including `conflict`), maintenanceTask, patternAnalysis (insights with required supporting IDs, water points, period, limitations, no cause field).
+- [x] **T1.1 Zod schemas.** Organization, member, waterPoint, incident (with revision fields, `ai`, `confirmedFields`), local incident record (with `syncStatus` including `conflict`), maintenanceTask, patternAnalysis (insights with required supporting IDs, water points, period, limitations, no cause field).
   *Test:* valid and invalid fixtures for every schema, including an insight with no limitations (rejected).
-- [ ] **T1.2 UI primitives.** Button, TextField, SelectField, TextArea, Badge, Alert, Spinner, EmptyState, ErrorState, `AsyncBoundary`. All text from strings module.
+- [x] **T1.2 UI primitives.** Button, TextField, SelectField, TextArea, Badge, Alert, Spinner, EmptyState, ErrorState, `AsyncBoundary`. All text from strings module.
   *Test:* component tests per state and label association.
-- [ ] **T1.3 App layout.** Responsive shell, role nav placeholder, skip link, `aria-live` region, connectivity indicator, "Demo data (fictional)" banner, help text stating the offline-after-load boundary.
+- [x] **T1.3 App layout.** Responsive shell, role nav placeholder, skip link, `aria-live` region, connectivity indicator, "Demo data (fictional)" banner, help text stating the offline-after-load boundary.
   *Test:* component tests. Refs: R10.1, D2.
 
 ## Phase 2: Firebase, auth, provisioning and rules (emulator first)
 
-- [ ] **T2.1 Firebase init.** App, Auth, Firestore, Functions client. App Check init with `ReCaptcha*Provider` **[verify]** and the debug token only under `import.meta.env.DEV`. Emulator connection in dev and tests.
+- [x] **T2.1 Firebase init.** App, Auth, Firestore, Functions client. App Check init with `ReCaptcha*Provider` **[verify]** and the debug token only under `import.meta.env.DEV`. Emulator connection in dev and tests.
   *Test:* mocked SDK unit test. Build check passes. Refs: S5.
-- [ ] **T2.2 firebase.json and emulators.** Configure Auth, Firestore, Functions, Hosting emulators. `test:rules` script.
+- [x] **T2.2 firebase.json and emulators.** Configure Auth, Firestore, Functions, Hosting emulators. `test:rules` script.
   *Test:* emulators start. Trivial rules test runs.
-- [ ] **T2.3 Rules: base, organizations, members.** Default deny, `isMember()` and claim helpers, org read for members, no client writes.
+- [x] **T2.3 Rules: base, organizations, members.** Default deny, `isMember()` and claim helpers, org read for members, no client writes.
   *Test:* per-role tests, cross-org denial, client write to `members` denied, user with claims but no member document denied, inactive member denied. Refs: S2, S12, R11.8.
-- [ ] **T2.4 Functions package skeleton.** `functions/` TypeScript package with `firebase-functions` and `firebase-admin`. **[approval]** for these two dependencies.
+- [x] **T2.4 Functions package skeleton.** `functions/` TypeScript package with `firebase-functions` and `firebase-admin`. **[approval]** for these two dependencies.
   *Test:* `npm run build` in `functions/`. Emulator loads it.
-- [ ] **T2.5 Bootstrap first administrator script.** Per design "Provisioning", steps 1 to 7 with `bootstrap.status` tracking. **[verify]** Admin SDK `setCustomUserClaims` and `generatePasswordResetLink`.
+- [x] **T2.5 Bootstrap first administrator script.** Per design "Provisioning", steps 1 to 7 with `bootstrap.status` tracking. **[verify]** Admin SDK `setCustomUserClaims` and `generatePasswordResetLink`.
   *Test:* emulator tests: creates org, user, claims, member doc, status `complete`. Refuses a second run for the same org. Refuses mismatched `--confirm-project`. Output contains no password or token other than the single reset link. **Existing-user guard:** (a) email belongs to a user with `members/{uid}` in another org: refused, that user's claims, member doc, and the target org are unchanged (org document not created); (b) email belongs to a user with organization claims for another org and no member doc: refused, claims unchanged; (c) user with unrelated claims only (`{ beta: true }`): refused, claims unchanged; (d) claims added between preflight and step 4: step 4 re-read stops without writing. Refs: R11.1, R11.2, R11.7, R11.9, AC12, AC22.
-- [ ] **T2.5b Bootstrap resume and cleanup.** `--resume` and `--cleanup` per the design's "Partial states" table.
+  *Done:* steps 6 and 7 swapped (reset link printed before marking complete, so a link failure can be resumed). Script lives in `functions/src/scripts/`.
+- [x] **T2.5b Bootstrap resume and cleanup.** `--resume` and `--cleanup` per the design's "Partial states" table.
   *Test:* emulator tests with a failure injected after each of steps 3, 4, 5, 6: resume ends `complete` with exactly one administrator. `adminUid` mismatch refuses. Org missing but claims present refuses with instructions. Resume accepts the recorded `adminUid` with exactly the expected claims, and refuses when that user's claims have changed to another org or gained extra keys. Cleanup requires confirmation, refuses when other members exist, removes claims only if they are exactly the expected map, never deletes a pre-existing Auth user, and removes only bootstrap-created data. Refs: R11.6, R11.9, AC20, AC22.
-- [ ] **T2.6 `createOrgUser` and `setUserRole` functions.** Admin only, App Check enforced, Zod input, caller's org only, self role change rejected.
+- [x] **T2.6 `createOrgUser` and `setUserRole` functions.** Admin only, App Check enforced, Zod input, caller's org only, self role change rejected.
   *Test:* emulator tests: technician and reporter denied, cross-org denied, self-change denied, valid calls set claims. `createOrgUser` with an email that already has an Auth user refused, existing user unchanged. `setUserRole` on a target with unrelated claims refused, claims unchanged. Refs: R11.3, R11.4, R11.10, AC22.
-- [ ] **T2.7 Auth service and session store.** Sign in, sign out, claims from `getIdTokenResult`, token refresh, `SessionScope`, reset of all stores on sign-out or user change.
+- [x] **T2.7 Auth service and session store.** Sign in, sign out, claims from `getIdTokenResult`, token refresh, `SessionScope`, reset of all stores on sign-out or user change.
   *Test:* store tests with mock auth: user change clears state. Refs: R1.1, R3.6, R11.5.
-- [ ] **T2.8 Routing, guards, sign-in screen.** No sign-up route.
+- [x] **T2.8 Routing, guards, sign-in screen.** No sign-up route.
   *Test:* component tests per role. Refs: R1.2, R1.4.
-- [ ] **T2.9 Users screen.** Admin creates technician and reporter accounts and changes other users' roles through the functions.
+- [x] **T2.9 Users screen.** Admin creates technician and reporter accounts and changes other users' roles through the functions.
   *Test:* component tests with mocked functions client. Own role control is not shown.
-- [ ] **T2.10 Rules: waterPoints.** Org read, admin and technician write, immutable `organizationId`, field validation.
+- [x] **T2.10 Rules: waterPoints.** Org read, admin and technician write, immutable `organizationId`, field validation.
   *Test:* rules tests per role. Query without `organizationId` filter denied. Query with the filter succeeds for each role. Refs: S1, AC2.
-- [ ] **T2.11 Rules: incidents (create, read, reporter update).** Create, read including `get` on a nonexistent ID, reporter content update with revision checks, reporter reads own only.
+- [x] **T2.11 Rules: incidents (create, read, reporter update).** Create, read including `get` on a nonexistent ID, reporter content update with revision checks, reporter reads own only.
   *Test:* stale `baseRevision` denied, wrong `serverRevision` increment denied, edit after triage denied, cross-org denied. Reporter list query without `reporterId` denied, with `organizationId` and `reporterId` succeeds. Admin and technician org-scoped list succeeds, unscoped denied. `get` of a nonexistent ID allowed for members only. Refs: R5.5, S1, AC2, AC6.
-- [ ] **T2.11b Rules: incident status transitions.** Allowed transitions only, administrator and technician only, `onlyChanged` limits, `lastStatusChange` consistency.
+- [x] **T2.11b Rules: incident status transitions.** Allowed transitions only, administrator and technician only, `onlyChanged` limits, `lastStatusChange` consistency.
   *Test:* positive: each of the three allowed transitions by administrator and by technician. Negative: `new → in_progress`, `new → resolved`, `triaged → resolved`, every reversal, same-status write, unknown status, reporter changing status (including own incident), status update that also changes `description`, `organizationId`, `reporterId`, `ai`, or `confirmedFields`, wrong `lastStatusChange.from` or `.by`, missing `serverRevision` increment, cross-org status update. Refs: R7.2, R7.3, AC19.
-- [ ] **T2.12 Rules: maintenanceTasks, patternAnalyses.** Task access per role, assignee in same org, `patternAnalyses` client write denied.
+- [x] **T2.12 Rules: maintenanceTasks, patternAnalyses.** Task access per role, assignee in same org, `patternAnalyses` client write denied.
   *Test:* rules tests.
-- [ ] **T2.13 Demo seed script.** Fictional Kwale County org and a second fictional org, three users per org, 6 water points, 12 incidents, all `demo: true`. Requires explicit project confirmation.
+- [x] **T2.13 Demo seed script.** Fictional Kwale County org and a second fictional org, three users per org, 6 water points, 12 incidents, all `demo: true`. Requires explicit project confirmation.
   *Test:* emulator run asserts counts, flags, claims. Refs: R10, S10.
 
 ## Phase 3: Water points
 
-- [ ] **T3.1 `orgScopedQuery` helper and water point service.**
+- [x] **T3.1 `orgScopedQuery` helper and water point service.**
   *Test:* unit test that every service query includes the org filter. Store tests with fake service. Refs: S1, AC2.
-- [ ] **T3.2 Water point list and detail.** All UI states.
+- [x] **T3.2 Water point list and detail.** All UI states.
   *Test:* component tests.
-- [ ] **T3.3 Water point form.**
+- [x] **T3.3 Water point form.**
   *Test:* validation and submit tests. Refs: R2.1, R2.3.
-- [ ] **T3.4 Water point cache.** IndexedDB, keyed by organization, refreshed on sign-in and focus.
+- [x] **T3.4 Water point cache.** IndexedDB, keyed by organization, refreshed on sign-in and focus.
   *Test:* fake-indexeddb tests, other org's cache not readable. Refs: R2.2.
+  *Done:* cache keyed by `[organizationId, ownerUid, waterPointId]` (scoped by user as well as organization). Refreshed on sign-in, focus, and reconnect.
 
 ## Phase 4: Offline incident capture
 
