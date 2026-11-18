@@ -96,25 +96,25 @@ Markers: **[approval]** needs your approval (dependency, console, or billing act
 
 ## Phase 5: Synchronization
 
-- [ ] **T5.1 Incident sync adapter.** Transaction implementing design section 6 "Sync of one record", using only the mutation snapshot. Fake adapter for unit tests.
+- [x] **T5.1 Incident sync adapter.** Transaction implementing design section 6 "Sync of one record", using only the mutation snapshot. Fake adapter for unit tests.
   *Test:* create, lost-ack retry (same `mutationId`) does not write, matching base updates, stale detected inside the transaction goes to conflict. Emulator test against real rules. Refs: R5.1, R5.2, R5.5, R5.7.
-- [ ] **T5.2 Sync engine.** Online check, snapshot creation, acknowledgement rule, single-flight lock, backoff, scope filter, no auto-retry for `conflict` or `permission_denied`.
+- [x] **T5.2 Sync engine.** Online check, snapshot creation, acknowledgement rule, single-flight lock, backoff, scope filter, no auto-retry for `conflict` or `permission_denied`.
   *Test:* duplicate trigger single write, failure then retry, offline skip, other user's records ignored, no deletion. **Race:** edit the record after the snapshot is taken and before the acknowledgement; assert the record stays `pending` with the newer content and new `mutationId`, `baseRevision` advances to the committed revision, and the next run syncs the newer content (emulator: one document, newer content). Same race with a failed acknowledgement: newer content kept. Refs: R5.3, R5.4, R5.6, R5.8, R5.11, R5.12, AC17.
-- [ ] **T5.2a Uncertain-commit reconciliation.** Durable `inFlight`, reconciliation table from design section 6, startup reset that keeps `inFlight`.
+- [x] **T5.2a Uncertain-commit reconciliation.** Durable `inFlight`, reconciliation table from design section 6, startup reset that keeps `inFlight`.
   *Test (unit, fake adapter):* each reconciliation row: A committed (record still A → `synced`; record now B → base advanced, `pending`, no conflict); A not committed; other write present → `conflict`; server unreadable → `inFlight` kept, nothing submitted. `inFlight` survives a simulated restart.
   *Test (emulator, AC17b):* for a new report and for an update: commit A against the emulator, drop the acknowledgement (adapter throws after commit), edit to B, run sync. Assert B commits, server has B's content, `mutationId == B`, `serverRevision == A's revision + 1`, local `synced`, one document, no `conflict` at any point.
   *Test (emulator, AC17c):* same, with the reconciliation read failing first, then an app restart, then success: same final state as AC17b.
   *Test (emulator, AC17d):* commit A, drop the acknowledgement, administrator triages, edit to B, sync: `conflict`, local B content unchanged.
   Refs: R5.13, R5.14, R5.15, AC17b, AC17c, AC17d.
-- [ ] **T5.2b Error classification and permission-denied check.** Classifier per design "Error classification".
+- [x] **T5.2b Error classification and permission-denied check.** Classifier per design "Error classification".
   *Test:* genuine conflicts classified `conflict`: server `serverRevision` ahead of `baseRevision`; server status `triaged`. Unrelated failures classified `failed`/`permission_denied`: claims removed, organization claim changed, follow-up read denied, server state equal to the snapshot (field validation failure), document missing for an update. Every case asserts local content and `mutationId` are unchanged. Emulator variants for the stale-revision and claims-removed cases. Refs: R5.9, R5.10, AC18.
-- [ ] **T5.3 Triggers and sync store.** Start, `online` event, after save, manual retry, stop on sign-out.
+- [x] **T5.3 Triggers and sync store.** Start, `online` event, after save, manual retry, stop on sign-out.
   *Test:* store tests with fake timers.
-- [ ] **T5.4 Sync status UI.**
+- [x] **T5.4 Sync status UI.**
   *Test:* component tests. Refs: R6.
-- [ ] **T5.5 Conflict review screen.** Side-by-side view, retry on latest (only while server status is `new`), discard with confirmation.
+- [x] **T5.5 Conflict review screen.** Side-by-side view, retry on latest (only while server status is `new`), discard with confirmation.
   *Test:* component tests, no retry until an action is chosen. Refs: R5.6.
-- [ ] **T5.6 Playwright: sync, failure, conflict, account switching.**
+- [x] **T5.6 Playwright: sync, failure, conflict, account switching.**
   *Test:* E2E. Refs: AC4, AC5, AC6, AC13.
 
 ## Phase 6: AI-assisted extraction

@@ -12,6 +12,7 @@ export function createIdbIncidentOutbox(database: Promise<MajiPulseDatabase>): I
       const scope: SessionScope = sessionScopeSchema.parse(rawScope)
       const range = () => IDBKeyRange.only([scope.organizationId, scope.ownerUid])
       const key = (id: string): [string, string, string] => [scope.organizationId, scope.ownerUid, id]
+      const lastSyncKey = JSON.stringify(['incidentsLastSync', scope.organizationId, scope.ownerUid])
 
       const parse = (value: unknown): LocalIncidentRecord | null => {
         const parsed = localIncidentRecordSchema.safeParse(value)
@@ -67,6 +68,33 @@ export function createIdbIncidentOutbox(database: Promise<MajiPulseDatabase>): I
           }
           await tx.store.put(value)
           await tx.done
+        },
+
+        async updateWith(id, change) {
+          const db = await database
+          const tx = db.transaction('incidents', 'readwrite')
+          const current = parse(await tx.store.get(key(id)))
+          let next: LocalIncidentRecord | null
+          try {
+            next = current ? change(current) : null
+            if (next) await tx.store.put(checked(next))
+          } catch (error) {
+            tx.abort()
+            await tx.done.catch(() => undefined)
+            throw error
+          }
+          await tx.done
+          return next
+        },
+
+        async getLastSyncAt() {
+          const db = await database
+          return (await db.get('meta', lastSyncKey))?.value ?? null
+        },
+
+        async setLastSyncAt(iso) {
+          const db = await database
+          await db.put('meta', { key: lastSyncKey, value: iso })
         },
 
         async resetInterruptedSyncs() {

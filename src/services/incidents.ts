@@ -44,6 +44,16 @@ export interface IncidentRepository {
   /** Throws IncidentOutboxError('notFound') if the record does not exist. */
   update(record: LocalIncidentRecord): Promise<void>
   /**
+   * Atomic read-modify-write in one IndexedDB transaction, so concurrent
+   * saves and sync results never overwrite each other. `change` must be
+   * synchronous; return null to leave the record unchanged. Returns the
+   * stored record, or null if it does not exist or was left unchanged.
+   */
+  updateWith(id: string, change: (current: LocalIncidentRecord) => LocalIncidentRecord | null): Promise<LocalIncidentRecord | null>
+  /** Time of the last sync run that finished without errors, for this scope. */
+  getLastSyncAt(): Promise<string | null>
+  setLastSyncAt(iso: string): Promise<void>
+  /**
    * Startup recovery: records left `syncing` by a closed tab or crash go
    * back to `pending`. `inFlight` is kept so the sync engine reconciles it
    * before submitting (design 6). Returns how many were reset.

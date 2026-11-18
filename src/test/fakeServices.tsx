@@ -145,6 +145,8 @@ export function renderApp(path: string, services: Partial<AppServices> = {}) {
     waterPointCache: services.waterPointCache ?? new FakeWaterPointCache(),
     // The real IndexedDB outbox on fake-indexeddb, one database per render.
     incidentOutbox: services.incidentOutbox ?? createIdbIncidentOutbox(openMajiPulseDb(`test-${crypto.randomUUID()}`)),
+    // No sync unless a test opts in, so reports stay local and predictable.
+    ...(services.incidentSync ? { incidentSync: services.incidentSync } : {}),
   }
   return { ...render(<App services={all} />, { wrapper: routerAt(path) }), services: all }
 }

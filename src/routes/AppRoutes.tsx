@@ -5,6 +5,7 @@ import { EditReportPage, NewReportPage } from '../pages/reports/ReportFormPages'
 import { MyReportsPage, ReportDetailPage } from '../pages/reports/ReportListPages'
 import { NotFoundPage, PlaceholderPage } from '../pages/StatusPages'
 import { SignInPage } from '../pages/SignInPage'
+import { SyncStatusPage } from '../pages/SyncStatusPage'
 import { UsersPage } from '../pages/UsersPage'
 import { WaterPointDetailPage } from '../pages/waterPoints/WaterPointDetailPage'
 import { WaterPointFormPage } from '../pages/waterPoints/WaterPointFormPage'
@@ -19,6 +20,7 @@ const PAGES = {
   waterPoints: WaterPointsPage,
   newReport: NewReportPage,
   myReports: MyReportsPage,
+  syncStatus: SyncStatusPage,
 } as const
 
 /** There is deliberately no sign-up route (R1.4). */

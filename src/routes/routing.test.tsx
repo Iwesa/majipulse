@@ -75,4 +75,16 @@ describe('routing and guards (T2.8)', () => {
     fireEvent.click(await screen.findByRole('button', { name: en.layout.signOut }))
     await waitFor(() => expect(screen.getByRole('heading', { name: en.signIn.title })).toBeInTheDocument())
   })
+
+  it('the next user after a sign-out starts at Home, not the previous user’s page', async () => {
+    const auth = new FakeAuthService(signedIn('technician'))
+    auth.signIn.mockImplementation(async () => auth.emit(signedIn('reporter')))
+    renderApp('/incidents', { auth })
+    fireEvent.click(await screen.findByRole('button', { name: en.layout.signOut }))
+    await screen.findByRole('heading', { name: en.signIn.title })
+    fireEvent.change(screen.getByLabelText(new RegExp(`^${en.signIn.email}`)), { target: { value: 'reporter@example.org' } })
+    fireEvent.change(screen.getByLabelText(new RegExp(`^${en.signIn.password}`)), { target: { value: 'password' } })
+    fireEvent.click(screen.getByRole('button', { name: en.signIn.submit }))
+    expect(await screen.findByRole('heading', { level: 1, name: en.home.title })).toBeInTheDocument()
+  })
 })

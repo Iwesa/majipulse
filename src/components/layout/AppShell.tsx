@@ -17,6 +17,8 @@ interface AppShellProps {
   organizationSlot?: ReactNode
   /** Signed-in user name and sign-out control. */
   userSlot?: ReactNode
+  /** Report sending summary, next to the connectivity indicator. */
+  syncSlot?: ReactNode
   online: boolean
   showDemoBanner?: boolean
   /** Short message announced politely to screen readers, such as "Report saved". */
@@ -29,6 +31,7 @@ export function AppShell({
   role,
   organizationSlot,
   userSlot,
+  syncSlot,
   online,
   showDemoBanner = false,
   statusMessage = '',
@@ -68,6 +71,7 @@ export function AppShell({
           )}
           <div className="ml-auto flex flex-wrap items-center gap-3">
             <ConnectivityIndicator online={online} />
+            {syncSlot}
             {userSlot && (
               <div className="flex items-center gap-2 text-sm text-slate-700">
                 <span className="sr-only">{en.layout.signedInAs} </span>

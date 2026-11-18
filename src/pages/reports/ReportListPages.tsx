@@ -1,8 +1,10 @@
 import { Pencil, Plus } from 'lucide-react'
+import { useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
-import { useIncidents, useSession, useWaterPoints } from '../../app/servicesContext'
+import { useIncidents, useSession, useSync, useWaterPoints } from '../../app/servicesContext'
+import { ConflictReview } from '../../components/incidents/ConflictReview'
 import { SyncStatusBadge } from '../../components/incidents/SyncStatusBadge'
-import { Alert, AsyncBoundary, EmptyState } from '../../components/ui'
+import { Alert, AsyncBoundary, Button, EmptyState } from '../../components/ui'
 import { formatDateTime } from '../../lib/formatDate'
 import { isEditable } from '../../services/incidents'
 import { en, format } from '../../strings/en'
@@ -70,6 +72,9 @@ export function ReportDetailPage() {
   const list = useIncidents((s) => s.list)
   const nameOf = useWaterPointName()
   const saved = (useLocation().state as { saved?: 'new' | 'edit' } | null)?.saved
+  const syncEnabled = useSync((s) => s.enabled)
+  const retry = useSync((s) => s.retry)
+  const [resolved, setResolved] = useState<'retryOnLatest' | 'discardMyEdit' | null>(null)
   if (session.status !== 'signedIn') return null
 
   return (
@@ -84,7 +89,8 @@ export function ReportDetailPage() {
           const f = en.reports.fields
           return (
             <article className="flex flex-col gap-4">
-              {saved && <Alert tone="success">{saved === 'new' ? en.reports.savedNew : en.reports.savedEdit}</Alert>}
+              {saved && !resolved && <Alert tone="success">{saved === 'new' ? en.reports.savedNew : en.reports.savedEdit}</Alert>}
+              {resolved && <Alert tone="success">{resolved === 'discardMyEdit' ? en.conflict.discarded : en.conflict.retrying}</Alert>}
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-2xl font-bold text-slate-900">
                   {en.incidentTypes[record.incidentType]}: {nameOf(record.waterPointId)}
@@ -102,7 +108,18 @@ export function ReportDetailPage() {
                 {record.syncStatus === 'failed' && record.failureKind && (
                   <p className="text-slate-800">{en.failureKinds[record.failureKind]}</p>
                 )}
+                {record.syncStatus === 'failed' && syncEnabled && (
+                  <div className="flex flex-col gap-1">
+                    <Button variant="secondary" className="self-start" onClick={() => void retry(record.id)}>
+                      {en.sync.retry}
+                    </Button>
+                    {record.failureKind !== 'network' && <p className="text-sm text-slate-700">{en.sync.retryHelp}</p>}
+                  </div>
+                )}
               </section>
+              {record.syncStatus === 'conflict' && (
+                <ConflictReview record={record} scope={session.user.scope} waterPointName={nameOf} onResolved={setResolved} />
+              )}
               <dl className="grid gap-3 sm:grid-cols-[12rem_1fr]">
                 <dt className="font-medium">{f.waterPoint}</dt>
                 <dd>{nameOf(record.waterPointId)}</dd>

@@ -1,7 +1,9 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
-import { useIncidents, useSession } from '../app/servicesContext'
+import { useEffect, useState } from 'react'
+import { useIncidents, useSession, useSync } from '../app/servicesContext'
+import { useIncidentSync } from '../app/useIncidentSync'
 import { useWaterPointRefresh } from '../app/useWaterPointRefresh'
+import { SyncIndicator } from '../components/incidents/SyncIndicator'
 import { AppShell } from '../components/layout/AppShell'
 import { Button, EmptyState, Spinner } from '../components/ui'
 import { useOnlineStatus } from '../lib/useOnlineStatus'
@@ -17,6 +19,10 @@ export function RequireSession() {
   const signOut = useSession((s) => s.signOut)
   const online = useOnlineStatus()
   const location = useLocation()
+  // After a sign-out, the next person to sign in starts at Home instead of the
+  // previous user's last page. Only a signed-out visit keeps the return path.
+  const [wasSignedIn, setWasSignedIn] = useState(false)
+  if (session.status === 'signedIn' && !wasSignedIn) setWasSignedIn(true)
 
   if (session.status === 'loading') {
     return (
@@ -28,7 +34,7 @@ export function RequireSession() {
     )
   }
   if (session.status === 'signedOut') {
-    return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />
+    return <Navigate to="/sign-in" replace state={wasSignedIn ? null : { from: location.pathname }} />
   }
   if (session.status === 'noAccess') {
     return (
@@ -53,6 +59,7 @@ export function RequireSession() {
       online={online}
       showDemoBanner={user.organizationDemo}
       organizationSlot={user.organizationName ?? user.organizationId}
+      syncSlot={<SyncIndicator />}
       userSlot={
         <>
           <span>{user.displayName ?? user.email}</span>
@@ -63,18 +70,35 @@ export function RequireSession() {
       }
     >
       <WaterPointRefresh organizationId={user.organizationId} ownerUid={user.uid} />
-      <IncidentSession organizationId={user.organizationId} ownerUid={user.uid} />
+      <IncidentSession key={`${user.organizationId}|${user.uid}`} organizationId={user.organizationId} ownerUid={user.uid} />
       <Outlet />
     </AppShell>
   )
 }
 
-/** Renders nothing; opens the signed-in user's local reports once per session. */
+/**
+ * Renders nothing; opens the signed-in user's local reports once per session,
+ * then starts sync for them. Keyed by scope, so an account switch remounts it.
+ */
 function IncidentSession({ organizationId, ownerUid }: { organizationId: string; ownerUid: string }) {
   const openSession = useIncidents((s) => s.openSession)
+  const syncEnabled = useSync((s) => s.enabled)
+  const [opened, setOpened] = useState(false)
   useEffect(() => {
-    void openSession({ organizationId, ownerUid })
-  }, [openSession, organizationId, ownerUid])
+    let alive = true
+    // With sync on, the engine recovers interrupted submissions under its lock.
+    void openSession({ organizationId, ownerUid }, { resetInterrupted: !syncEnabled }).then(() => {
+      if (alive) setOpened(true)
+    })
+    return () => {
+      alive = false
+    }
+  }, [openSession, organizationId, ownerUid, syncEnabled])
+  return opened && syncEnabled ? <SyncRunner organizationId={organizationId} ownerUid={ownerUid} /> : null
+}
+
+function SyncRunner({ organizationId, ownerUid }: { organizationId: string; ownerUid: string }) {
+  useIncidentSync(organizationId, ownerUid)
   return null
 }
 

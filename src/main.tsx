@@ -5,6 +5,7 @@ import App from './App'
 import { ConfigErrorPage } from './pages/ConfigErrorPage'
 import { initFirebase } from './services/firebase/app'
 import { createFirebaseAuthService } from './services/firebase/authService'
+import { createFirestoreIncidentSyncAdapter } from './services/firebase/incidentSyncAdapter'
 import { ConfigError, loadAppConfig } from './services/firebase/config'
 import { createFirebaseUserAdminService } from './services/firebase/userAdminService'
 import { createFirebaseWaterPointService } from './services/firebase/waterPointService'
@@ -29,6 +30,7 @@ try {
     waterPoints: createFirebaseWaterPointService(firebase.db),
     waterPointCache: createIdbWaterPointCache(database),
     incidentOutbox: createIdbIncidentOutbox(database),
+    incidentSync: createFirestoreIncidentSyncAdapter(firebase.db),
   }
   root.render(
     <StrictMode>
