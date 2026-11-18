@@ -90,6 +90,9 @@ describe('initFirebase', () => {
     ReCaptchaEnterpriseProvider: vi.fn(function (this: { key: string }, key: string) {
       this.key = key
     }),
+    CustomProvider: vi.fn(function (this: { options: unknown }, options: unknown) {
+      this.options = options
+    }),
     getAuth: vi.fn(() => ({ auth: true })),
     getFirestore: vi.fn(() => ({ db: true })),
     getFunctions: vi.fn(() => ({ functions: true })),
@@ -117,6 +120,7 @@ describe('initFirebase', () => {
     vi.doMock('firebase/app-check', () => ({
       initializeAppCheck: sdk.initializeAppCheck,
       ReCaptchaEnterpriseProvider: sdk.ReCaptchaEnterpriseProvider,
+      CustomProvider: sdk.CustomProvider,
     }))
     vi.doMock('firebase/auth', () => ({ getAuth: sdk.getAuth, connectAuthEmulator: sdk.connectAuthEmulator }))
     vi.doMock('firebase/firestore', () => ({ getFirestore: sdk.getFirestore, connectFirestoreEmulator: sdk.connectFirestoreEmulator }))
@@ -169,5 +173,15 @@ describe('initFirebase', () => {
     expect(sdk.connectAuthEmulator).toHaveBeenCalledWith({ auth: true }, EMULATOR.auth, { disableWarnings: true })
     expect(sdk.connectFirestoreEmulator).toHaveBeenCalledWith({ db: true }, '127.0.0.1', 8080)
     expect(sdk.connectFunctionsEmulator).toHaveBeenCalledWith({ functions: true }, '127.0.0.1', 5001)
+  })
+
+  it('uses a placeholder App Check provider with emulators and reCAPTCHA Enterprise otherwise', async () => {
+    const { initFirebase } = await import('./app')
+    initFirebase({ ...config, useEmulators: true })
+    expect(sdk.CustomProvider).toHaveBeenCalledOnce()
+    expect(sdk.ReCaptchaEnterpriseProvider).not.toHaveBeenCalled()
+    initFirebase(config)
+    expect(sdk.ReCaptchaEnterpriseProvider).toHaveBeenCalledWith('site-key')
+    expect(sdk.CustomProvider).toHaveBeenCalledOnce()
   })
 })

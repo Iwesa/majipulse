@@ -81,15 +81,15 @@ Markers: **[approval]** needs your approval (dependency, console, or billing act
 
 ## Phase 4: Offline incident capture
 
-- [ ] **T4.1 IndexedDB repository.** Scoped by `SessionScope`, compound keys, versioned schema, `syncing` reset on startup.
+- [x] **T4.1 IndexedDB repository.** Scoped by `SessionScope`, compound keys, versioned schema, `syncing` reset on startup.
   *Test:* CRUD, user A records invisible to user B, records survive sign-out, crash recovery. Refs: R3.5, R3.6, S11.
-- [ ] **T4.2 Draft and revision logic.** UUID before first save, `clientRevision` and `mutationId` on each save, `baseRevision` handling, `confirmedFields` merge.
+- [x] **T4.2 Draft and revision logic.** UUID before first save, `clientRevision` and `mutationId` on each save, `baseRevision` handling, `confirmedFields` merge.
   *Test:* unit tests. Refs: R3.1, R3.4, R4.5.
-- [ ] **T4.3 New report screen (manual).**
+- [x] **T4.3 New report screen (manual).**
   *Test:* save writes locally with network mocked off, shows `pending`. Refs: R3.2, R3.3.
-- [ ] **T4.4 My reports screen.** Five statuses with text and icon, edit while allowed.
+- [x] **T4.4 My reports screen.** Five statuses with text and icon, edit while allowed.
   *Test:* component tests per status. Refs: R6.
-- [ ] **T4.5 Playwright: offline capture in a loaded app.** Go offline after load, create report, reconnect, reload, report still present.
+- [x] **T4.5 Playwright: offline capture in a loaded app.** Go offline after load, create report, reconnect, reload, report still present.
   *Test:* E2E. Refs: AC3.
 
 ## Phase 5: Synchronization

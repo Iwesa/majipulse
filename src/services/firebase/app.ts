@@ -1,5 +1,5 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app'
-import { initializeAppCheck, ReCaptchaEnterpriseProvider, type AppCheck } from 'firebase/app-check'
+import { CustomProvider, initializeAppCheck, ReCaptchaEnterpriseProvider, type AppCheck } from 'firebase/app-check'
 import { connectAuthEmulator, getAuth, type Auth } from 'firebase/auth'
 import { connectFirestoreEmulator, getFirestore, type Firestore } from 'firebase/firestore'
 import { connectFunctionsEmulator, getFunctions, type Functions } from 'firebase/functions'
@@ -39,7 +39,12 @@ export function initFirebase(config: AppConfig, debugToken?: string): FirebaseSe
     self.FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken === 'true' ? true : debugToken
   }
   const appCheck = initializeAppCheck(app, {
-    provider: new ReCaptchaEnterpriseProvider(config.appCheckSiteKey),
+    // The emulators do not verify App Check tokens (the Functions emulator
+    // only checks one is present), so emulator builds send a placeholder
+    // instead of loading reCAPTCHA. Production builds never set useEmulators.
+    provider: config.useEmulators
+      ? new CustomProvider({ getToken: async () => ({ token: 'emulator-placeholder', expireTimeMillis: Date.now() + 3_600_000 }) })
+      : new ReCaptchaEnterpriseProvider(config.appCheckSiteKey),
     isTokenAutoRefreshEnabled: true,
   })
 

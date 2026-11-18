@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'coverage', 'test-results', 'playwright-report', 'functions/lib']),
+  globalIgnores(['dist', 'coverage', 'test-results', 'playwright-report', 'functions/lib', 'dist-e2e']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -21,7 +21,7 @@ export default defineConfig([
   },
   {
     // Node code: Cloud Functions, operator scripts, emulator tests, tooling.
-    files: ['functions/**/*.ts', 'tests/**/*.ts', 'scripts/**/*.mjs', '*.config.ts'],
+    files: ['functions/**/*.ts', 'tests/**/*.ts', 'e2e-emulator/**/*.ts', 'scripts/**/*.mjs', '*.config.ts'],
     languageOptions: {
       globals: globals.node,
     },

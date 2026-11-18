@@ -9,6 +9,7 @@ import { ConfigError, loadAppConfig } from './services/firebase/config'
 import { createFirebaseUserAdminService } from './services/firebase/userAdminService'
 import { createFirebaseWaterPointService } from './services/firebase/waterPointService'
 import { openMajiPulseDb } from './services/offline/db'
+import { createIdbIncidentOutbox } from './services/offline/incidentOutbox'
 import { createIdbWaterPointCache } from './services/offline/waterPointCache'
 import './index.css'
 
@@ -27,6 +28,7 @@ try {
     userAdmin: createFirebaseUserAdminService(firebase.db, firebase.functions),
     waterPoints: createFirebaseWaterPointService(firebase.db),
     waterPointCache: createIdbWaterPointCache(database),
+    incidentOutbox: createIdbIncidentOutbox(database),
   }
   root.render(
     <StrictMode>

@@ -8,6 +8,8 @@ import type { AppServices } from '../app/servicesContext'
 import type { Role, SessionScope } from '../schemas/roles'
 import type { WaterPointRecord } from '../schemas/waterPoint'
 import { WaterPointServiceError, type WaterPointCache, type WaterPointService } from '../services/waterPoints'
+import { openMajiPulseDb } from '../services/offline/db'
+import { createIdbIncidentOutbox } from '../services/offline/incidentOutbox'
 import type { AuthService, Session, SessionUser } from '../services/session'
 import type { MemberSummary, UserAdminService } from '../services/userAdmin'
 
@@ -141,6 +143,8 @@ export function renderApp(path: string, services: Partial<AppServices> = {}) {
     userAdmin: services.userAdmin ?? fakeUserAdmin(),
     waterPoints: services.waterPoints ?? new FakeWaterPointService(),
     waterPointCache: services.waterPointCache ?? new FakeWaterPointCache(),
+    // The real IndexedDB outbox on fake-indexeddb, one database per render.
+    incidentOutbox: services.incidentOutbox ?? createIdbIncidentOutbox(openMajiPulseDb(`test-${crypto.randomUUID()}`)),
   }
   return { ...render(<App services={all} />, { wrapper: routerAt(path) }), services: all }
 }

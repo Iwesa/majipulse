@@ -1,6 +1,8 @@
 import { Route, Routes } from 'react-router-dom'
 import { NAV_ITEMS } from '../components/layout/navigation'
 import { HomePage } from '../pages/HomePage'
+import { EditReportPage, NewReportPage } from '../pages/reports/ReportFormPages'
+import { MyReportsPage, ReportDetailPage } from '../pages/reports/ReportListPages'
 import { NotFoundPage, PlaceholderPage } from '../pages/StatusPages'
 import { SignInPage } from '../pages/SignInPage'
 import { UsersPage } from '../pages/UsersPage'
@@ -11,7 +13,13 @@ import { STAFF_ROLES } from '../schemas/roles'
 import { RequireRole, RequireSession } from './guards'
 
 /** Screens that exist so far. Every other nav item gets a placeholder. */
-const PAGES = { home: HomePage, users: UsersPage, waterPoints: WaterPointsPage } as const
+const PAGES = {
+  home: HomePage,
+  users: UsersPage,
+  waterPoints: WaterPointsPage,
+  newReport: NewReportPage,
+  myReports: MyReportsPage,
+} as const
 
 /** There is deliberately no sign-up route (R1.4). */
 export function AppRoutes() {
@@ -32,6 +40,9 @@ export function AppRoutes() {
           <Route path="/water-points/:waterPointId/edit" element={<WaterPointFormPage mode="edit" />} />
         </Route>
         <Route path="/water-points/:waterPointId" element={<WaterPointDetailPage />} />
+        {/* A user's own local reports: every role. */}
+        <Route path="/reports/:incidentId" element={<ReportDetailPage />} />
+        <Route path="/reports/:incidentId/edit" element={<EditReportPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

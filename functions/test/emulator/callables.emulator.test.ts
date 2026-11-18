@@ -68,6 +68,10 @@ beforeAll(async () => {
   adminUid = result.adminUid
   await getAuth(app).updateUser(adminUid, { password: PASSWORD })
   adminToken = await signIn('admin@example.org')
+  // Warm up: each function's first request starts its worker, and loading
+  // firebase-admin can take tens of seconds on a busy machine. Unauthenticated
+  // calls are rejected without side effects.
+  await Promise.all(['createOrgUser', 'setUserRole'].map((name) => call(name, {}, {})))
 }, 300_000)
 
 afterAll(async () => {

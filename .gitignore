@@ -45,3 +45,4 @@ playwright/.cache
 # Cloud Functions build output
 functions/lib
 *.tsbuildinfo
+dist-e2e

@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useSession } from '../app/servicesContext'
+import { useEffect } from 'react'
+import { useIncidents, useSession } from '../app/servicesContext'
 import { useWaterPointRefresh } from '../app/useWaterPointRefresh'
 import { AppShell } from '../components/layout/AppShell'
 import { Button, EmptyState, Spinner } from '../components/ui'
@@ -62,9 +63,19 @@ export function RequireSession() {
       }
     >
       <WaterPointRefresh organizationId={user.organizationId} ownerUid={user.uid} />
+      <IncidentSession organizationId={user.organizationId} ownerUid={user.uid} />
       <Outlet />
     </AppShell>
   )
+}
+
+/** Renders nothing; opens the signed-in user's local reports once per session. */
+function IncidentSession({ organizationId, ownerUid }: { organizationId: string; ownerUid: string }) {
+  const openSession = useIncidents((s) => s.openSession)
+  useEffect(() => {
+    void openSession({ organizationId, ownerUid })
+  }, [openSession, organizationId, ownerUid])
+  return null
 }
 
 /** Renders nothing; keeps the water point cache fresh for the signed-in user. */
