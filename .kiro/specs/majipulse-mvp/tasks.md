@@ -151,13 +151,13 @@ Markers: **[approval]** needs your approval (dependency, console, or billing act
 
 ## Phase 8: Pattern analysis (D3 approved; real calls wait for TP.2)
 
-- [ ] **T8.1 Server AI setup.** Add `@google/genai` to `functions/` **[approval]**. Confirm Vertex mode client options, authentication through the function's service account, IAM role, structured output config, and model availability in the chosen region **[verify]**. Record in `docs/ai-logic-notes.md`.
+- [x] **T8.1 Server AI setup.** Add `@google/genai` to `functions/` **[approval]**. Confirm Vertex mode client options, authentication through the function's service account, IAM role, structured output config, and model availability in the chosen region **[verify]**. Record in `docs/ai-logic-notes.md`.
   *Test:* function builds. Manual smoke call in the demo project.
-- [ ] **T8.2 Insight schemas and filters.** Citation, water point, period, and limitations checks. Confirmed-cause phrase filter.
+- [x] **T8.2 Insight schemas and filters.** Citation, water point, period, and limitations checks. Confirmed-cause phrase filter.
   *Test:* fixtures: foreign incident ID dropped, unlinked water point dropped, missing limitations dropped, "the cause is" statement dropped, insight containing a placeholder or a phone number dropped. Refs: R9.4, R9.5, R4.10.
-- [ ] **T8.3 `analyzeIncidentPatterns` function.** `enforceAppCheck: true`, role and org checks, insufficient-data short circuit, minimized prompt with redacted and truncated descriptions and no `locationNote`, model adapter, write to `patternAnalyses`.
+- [x] **T8.3 `analyzeIncidentPatterns` function.** `enforceAppCheck: true`, role and org checks, insufficient-data short circuit, minimized prompt with redacted and truncated descriptions and no `locationNote`, model adapter, write to `patternAnalyses`.
   *Test:* emulator with mocked adapter: denial cases, fewer than 3 incidents, valid result. Seeded incidents containing phones, emails, and "my name is" produce a captured model request with only placeholders and no `reporterId`, `createdBy`, or `locationNote`. Logs contain only redaction counts. Refs: R9.1 to R9.3, S4, S7, AC21.
-- [ ] **T8.4 Pattern analysis screen.** Observation and hypothesis labels, incidents, water points, period, limitations.
+- [x] **T8.4 Pattern analysis screen.** Observation and hypothesis labels, incidents, water points, period, limitations.
   *Test:* component tests. Refs: AC11.
 
 ## Phase 9: Hardening and release

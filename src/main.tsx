@@ -7,6 +7,7 @@ import { createFirebaseIncidentExtractor } from './services/ai/firebaseExtractor
 import { initFirebase } from './services/firebase/app'
 import { createFirebaseAuthService } from './services/firebase/authService'
 import { createFirestoreIncidentSyncAdapter } from './services/firebase/incidentSyncAdapter'
+import { createFirebasePatternService } from './services/firebase/patternService'
 import { ConfigError, loadAppConfig } from './services/firebase/config'
 import { createFirebaseDashboardService, createFirebaseMaintenanceService, createFirebaseStaffIncidentService } from './services/firebase/staffServices'
 import { createFirebaseUserAdminService } from './services/firebase/userAdminService'
@@ -35,6 +36,7 @@ try {
     staffIncidents: createFirebaseStaffIncidentService(firebase.db),
     maintenance: createFirebaseMaintenanceService(firebase.db),
     dashboard: createFirebaseDashboardService(firebase.db),
+    patterns: createFirebasePatternService(firebase.db, firebase.functions),
     incidentSync: createFirestoreIncidentSyncAdapter(firebase.db),
     incidentExtractor: createFirebaseIncidentExtractor(firebase.app),
   }

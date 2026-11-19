@@ -7,6 +7,7 @@ import indexFile from '../../firestore.indexes.json'
 import { incidentStatusSchema } from '../schemas/incident'
 import { maintenanceStatusSchema } from '../schemas/maintenanceTask'
 import {
+  analysisListPlan,
   incidentCountPlan,
   incidentQueuePlan,
   taskCountPlan,
@@ -43,6 +44,16 @@ function hasIndex(plan: QueryPlan, among: typeof indexes = indexes): boolean {
   })
 }
 
+/**
+ * The pattern analysis function's incident read (functions/src/patterns/adminAnalysisPort.ts):
+ * organizationId ==, optional waterPointId ==, a createdAt range, orderBy createdAt desc. A range
+ * on the sort field needs the same index as the sort alone.
+ */
+const SERVER_ANALYSIS_PLANS: QueryPlan[] = [
+  { collection: 'incidents', equals: [], orderBy: ['createdAt', 'desc'], limit: 200 },
+  { collection: 'incidents', equals: [['waterPointId', 'wp-1']], orderBy: ['createdAt', 'desc'], limit: 200 },
+]
+
 const queueFilters: IncidentQueueFilter[] = []
 for (const status of [null, ...incidentStatusSchema.options]) {
   for (const waterPointId of [null, 'wp-1']) {
@@ -71,6 +82,14 @@ describe('composite indexes (T7.1)', () => {
     expect(hasIndex(taskCountPlan(status))).toBe(true)
   })
 
+  it('saved pattern analyses, newest first (T8.4)', () => {
+    expect(hasIndex(analysisListPlan())).toBe(true)
+  })
+
+  it.each(SERVER_ANALYSIS_PLANS.map((p) => [JSON.stringify(p.equals), p] as const))('pattern analysis incident read %s', (_label, plan) => {
+    expect(hasIndex(plan)).toBe(true)
+  })
+
   it('has no unused or duplicate indexes', () => {
     const plans: QueryPlan[] = [
       ...queueFilters.map(incidentQueuePlan),
@@ -78,6 +97,8 @@ describe('composite indexes (T7.1)', () => {
       tasksForIncidentPlan('x'),
       ...incidentStatusSchema.options.map(incidentCountPlan),
       ...maintenanceStatusSchema.options.map(taskCountPlan),
+      analysisListPlan(),
+      ...SERVER_ANALYSIS_PLANS,
     ]
     const keys = indexes.map((i) => `${i.collectionGroup}:${i.fields.map((f) => `${f.fieldPath}:${f.order}`).join(',')}`)
     expect(new Set(keys).size).toBe(keys.length)

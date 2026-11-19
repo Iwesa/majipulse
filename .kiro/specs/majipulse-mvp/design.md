@@ -137,7 +137,7 @@ Without on-device support and without network, AI is unavailable. Reporting cont
 3. Function (`onCall` with `enforceAppCheck: true`) checks auth, role claim, and organization, and validates input with Zod.
 4. Reads the organization's incidents in scope. Fewer than 3 stores and returns `insufficientData: true`, no model call.
 5. Sends minimized data: incident IDs, types, severity, dates, water-point IDs and names, and **redacted, truncated** descriptions. Structured identity fields (`reporterId`, `createdBy`, member data) and `locationNote` are not sent. Free text may still contain personal information the redactor missed.
-6. Model call via `@google/genai` in Vertex mode, behind a `PatternModel` adapter interface so tests can inject a fake. **[verify: client options (`enterprise: true` or `vertexai: true`, `project`, `location`), structured-output config, service-account IAM role, model availability in the function's region]**.
+6. Model call via `@google/genai` in Vertex mode, behind a `PatternModel` adapter interface so tests can inject a fake. [verified in T8.1, docs/ai-logic-notes.md: `enterprise: true` with `project` and `location`; `responseMimeType` plus `responseJsonSchema`; `roles/aiplatform.user` on the runtime service account; no Gemini endpoint in `africa-south1`, so the model location defaults to `global` (configurable) while the function stays in `africa-south1`].
 7. Zod validation, then filters: drop insights containing a placeholder or matching a redactor detector, drop insights citing incidents outside the analyzed set, water points not linked to the cited incidents, periods outside the analysis period, or no limitations. Drop insights whose statement asserts a confirmed cause (fixture-tested phrases such as "confirmed", "the cause is", "diagnosed"). Analysis-level limitations always include the sample size.
 8. Store in `patternAnalyses` and return.
 
@@ -330,7 +330,7 @@ Model calls are mocked in automated tests. Real model calls are manual smoke tes
 |---|---|---|
 | D1 | IndexedDB outbox, Firestore transaction-based sync with revision checks in rules | Approved |
 | D2 | No service worker. Offline reporting after the app has loaded online. Offline cold start is stretch T-S2 | Approved |
-| D3 | `@google/genai` with Vertex AI (Gemini Enterprise Agent Platform) in a 2nd gen callable Cloud Function | Approved. SDK options, auth, IAM, structured output, regional availability remain **[verify]** in T8.1 |
+| D3 | `@google/genai` with Vertex AI (Gemini Enterprise Agent Platform) in a 2nd gen callable Cloud Function | Approved. Verified in T8.1 (docs/ai-logic-notes.md). A real call waits for TP.2 |
 | D4 | `fake-indexeddb`, `@firebase/rules-unit-testing` (6.x, for firebase 13), `firebase-tools`, `jsdom` as dev dependencies | Approved, installed |
 | D5 | Operator-run Admin SDK bootstrap for the first administrator. Administrator-only Cloud Functions for later users. No self-registration | Approved |
 | D6 | English only, centralized strings module | Approved |

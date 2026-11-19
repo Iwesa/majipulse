@@ -2,6 +2,7 @@ import { useEffect, useMemo, type ReactNode } from 'react'
 import { createDashboardStore } from '../stores/dashboardStore'
 import { createIncidentStore } from '../stores/incidentStore'
 import { createMaintenanceStore } from '../stores/maintenanceStore'
+import { createPatternStore } from '../stores/patternStore'
 import { createSessionStore } from '../stores/sessionStore'
 import { createStaffIncidentStore } from '../stores/staffIncidentStore'
 import { registerStoreReset } from '../stores/storeRegistry'
@@ -23,6 +24,7 @@ export function ServicesProvider({ services, children }: { services: AppServices
     [services.maintenance, services.userAdmin],
   )
   const dashboardStore = useMemo(() => createDashboardStore(services.dashboard), [services.dashboard])
+  const patternStore = useMemo(() => createPatternStore(services.patterns), [services.patterns])
   // Cleared when the signed-in user changes or signs out (R3.6). The sync
   // engine is stopped first, so it cannot write results for the old account.
   useEffect(() => registerStoreReset(() => syncStore.getState().reset()), [syncStore])
@@ -31,10 +33,11 @@ export function ServicesProvider({ services, children }: { services: AppServices
   useEffect(() => registerStoreReset(() => staffIncidentStore.getState().reset()), [staffIncidentStore])
   useEffect(() => registerStoreReset(() => maintenanceStore.getState().reset()), [maintenanceStore])
   useEffect(() => registerStoreReset(() => dashboardStore.getState().reset()), [dashboardStore])
+  useEffect(() => registerStoreReset(() => patternStore.getState().reset()), [patternStore])
   useEffect(() => sessionStore.getState().start(), [sessionStore])
   const value = useMemo(
-    () => ({ services, sessionStore, waterPointStore, incidentStore, syncStore, staffIncidentStore, maintenanceStore, dashboardStore }),
-    [services, sessionStore, waterPointStore, incidentStore, syncStore, staffIncidentStore, maintenanceStore, dashboardStore],
+    () => ({ services, sessionStore, waterPointStore, incidentStore, syncStore, staffIncidentStore, maintenanceStore, dashboardStore, patternStore }),
+    [services, sessionStore, waterPointStore, incidentStore, syncStore, staffIncidentStore, maintenanceStore, dashboardStore, patternStore],
   )
   return <ServicesContext.Provider value={value}>{children}</ServicesContext.Provider>
 }

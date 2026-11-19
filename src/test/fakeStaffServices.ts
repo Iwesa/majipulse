@@ -3,6 +3,7 @@
 import { vi } from 'vitest'
 import { isAllowedIncidentTransition, type Incident } from '../schemas/incident'
 import { isAllowedMaintenanceTransition, maintenanceTaskInputSchema } from '../schemas/maintenanceTask'
+import type { PatternAnalysisRecord, PatternService, RunInput } from '../services/patterns'
 import { QUEUE_LIMIT } from '../services/queryPlans'
 import {
   OPEN_INCIDENT_STATUSES,
@@ -161,4 +162,72 @@ export function fakeDashboard(incidents: () => StaffIncident[], tasks: () => Mai
     }),
   }
   return service
+}
+
+/** In-memory pattern analyses. `next` decides what a run returns; runs are recorded. */
+export class FakePatternService implements PatternService {
+  analyses: PatternAnalysisRecord[]
+  fail: StaffDataError | null = null
+  runFail: StaffDataError | null = null
+  next: (input: RunInput) => PatternAnalysisRecord
+  constructor(analyses: PatternAnalysisRecord[] = [], next?: (input: RunInput) => PatternAnalysisRecord) {
+    this.analyses = analyses
+    this.next = next ?? ((input) => patternAnalysis({ id: `analysis-${this.analyses.length + 1}`, period: { from: input.from, to: input.to } }))
+  }
+  list = vi.fn<PatternService['list']>(async (scope) => {
+    if (this.fail) throw this.fail
+    return this.analyses.filter((a) => a.organizationId === scope.organizationId).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  })
+  get = vi.fn<PatternService['get']>(async (scope, id) => {
+    if (this.fail) throw this.fail
+    return this.analyses.find((a) => a.id === id && a.organizationId === scope.organizationId) ?? null
+  })
+  run = vi.fn<PatternService['run']>(async (input) => {
+    if (this.runFail) throw this.runFail
+    const analysis = this.next(input)
+    this.analyses.push(analysis)
+    return { analysisId: analysis.id, insufficientData: analysis.insufficientData, analyzedIncidentCount: analysis.analyzedIncidentCount, insightCount: analysis.insights.length }
+  })
+}
+
+export const ANALYZED = ['10000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000003']
+
+export function patternAnalysis(overrides: Partial<PatternAnalysisRecord> = {}): PatternAnalysisRecord {
+  return {
+    id: 'analysis-1',
+    organizationId: STAFF_ORG,
+    requestedBy: 'uid-technician',
+    createdAt: '2026-03-31T12:00:00.000Z',
+    demo: true,
+    model: 'gemini-3.5-flash',
+    period: { from: '2026-03-01T00:00:00.000Z', to: '2026-03-31T00:00:00.000Z' },
+    scope: {},
+    analyzedIncidentIds: ANALYZED,
+    analyzedIncidentCount: 3,
+    insufficientData: false,
+    limitations: ['Based on 3 incident reports from 2026-03-01 to 2026-03-31.'],
+    insights: [
+      {
+        kind: 'observation',
+        title: 'Repeated low flow at Mwamanga (fictional)',
+        statement: 'Two reports describe low morning flow at the same borehole.',
+        supportingIncidentIds: [ANALYZED[0], ANALYZED[1]],
+        affectedWaterPointIds: ['wp-mwamanga'],
+        period: { from: '2026-03-02T00:00:00.000Z', to: '2026-03-06T00:00:00.000Z' },
+        limitations: ['Only two reports.'],
+        confidence: 'medium',
+      },
+      {
+        kind: 'hypothesis',
+        title: 'Possible pump wear',
+        statement: 'The low flow may be linked to a worn pump part.',
+        supportingIncidentIds: [ANALYZED[1]],
+        affectedWaterPointIds: ['wp-mwamanga'],
+        period: { from: '2026-03-02T00:00:00.000Z', to: '2026-03-06T00:00:00.000Z' },
+        limitations: ['No inspection yet.'],
+        confidence: 'low',
+      },
+    ],
+    ...overrides,
+  }
 }

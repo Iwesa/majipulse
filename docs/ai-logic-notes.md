@@ -95,3 +95,92 @@ offline. Error messages are never logged, because they can echo request data.
   Elsewhere, `PREFER_ON_DEVICE` uses the cloud model.
 - Offline without a device model, the cloud request fails. Reporting continues
   manually (R4.7).
+
+# Server pattern analysis with `@google/genai` (T8.1)
+
+Checked on 2026-11-19 against the installed SDK (`@google/genai` 3.6.1 in
+`functions/`: `dist/genai.d.ts` and the bundled `README.md`) and these docs:
+
+- Supported locations: https://docs.cloud.google.com/gemini-enterprise-agent-platform/resources/locations
+- Gemini 3.5 Flash model card: https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-5-flash
+- Access control: https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/access-control
+
+Vertex AI is now called "Gemini Enterprise Agent Platform" in the docs.
+Content was rephrased for compliance with licensing restrictions.
+
+## Install
+
+`npm install @google/genai --ignore-scripts` in `functions/` only (approved).
+It pulls in `protobufjs`, whose install script was not run. The root
+frontend package does not depend on it.
+
+## Client options
+
+```ts
+import { GoogleGenAI } from '@google/genai'
+const ai = new GoogleGenAI({ enterprise: true, project, location })
+```
+
+- `enterprise: true` selects the Agent Platform (Vertex) API. The SDK README
+  recommends it over the older `vertexai: true`, which still works. Setting
+  both with different values throws.
+- No API key. In Node.js the SDK authenticates with Application Default
+  Credentials (`google-auth-library`). In a deployed 2nd gen function these
+  are the function's runtime service account (by default the Compute Engine
+  default service account, `PROJECT_NUMBER-compute@developer.gserviceaccount.com`).
+- `project` comes from the function environment (`GCLOUD_PROJECT`).
+
+## IAM
+
+The runtime service account needs `roles/aiplatform.user` (Agent Platform
+User) on the project, and the Vertex AI API (`aiplatform.googleapis.com`)
+must be enabled. Both are TP.1/TP.2 console items. A dedicated service
+account with only this role (plus Firestore access) is preferable to the
+default compute account, which may hold Editor.
+
+## Region
+
+- The function runs in `africa-south1`, next to Firestore.
+- No Google model endpoint is listed for `africa-south1` (Johannesburg). The
+  regional tables cover the US, Americas, Europe, Asia Pacific, and the Middle
+  East.
+- `gemini-3.5-flash` (structured output supported) lists Standard PayGo on
+  `global` and the `us`/`eu` multi-regions only.
+- MajiPulse uses `location: 'global'` by default (parameter
+  `PATTERN_MODEL_LOCATION`). The docs note that with the global endpoint you
+  cannot choose where ML processing happens; set `eu` or `us` if the
+  organization needs a known processing region. Only redacted, truncated
+  descriptions and IDs are sent (see design "Privacy preprocessing").
+- Model: `gemini-3.5-flash` by default (parameter `PATTERN_MODEL`).
+- **Not verified here:** an actual call in the demo project. It needs billing,
+  the API, and the IAM role (TP.2). Manual smoke test after TP.2.
+
+## Structured output
+
+```ts
+await ai.models.generateContent({
+  model,
+  contents: prompt,
+  config: {
+    systemInstruction,
+    responseMimeType: 'application/json',
+    responseJsonSchema, // plain JSON Schema object
+    temperature: 0.2,
+    abortSignal,        // client-side cancel only
+  },
+})
+```
+
+- `responseJsonSchema` accepts a JSON Schema subset (`type`, `properties`,
+  `required`, `items`, `enum`, `minItems`, `maxItems`, `additionalProperties`,
+  and a few more). MajiPulse writes the schema by hand instead of generating
+  it, so it uses only listed keywords.
+- `response.text` (a getter, `string | undefined`) holds the JSON. It is
+  untrusted: parsed and validated with Zod, then filtered (T8.2).
+
+## Emulators and tests
+
+- There is no Vertex emulator. In projects whose ID starts with `demo-` (all
+  emulator runs), the adapter refuses to call the model and the function
+  returns "unavailable". Tests inject a fake model through the
+  `PatternModel` port and capture the outbound request.

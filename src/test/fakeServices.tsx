@@ -12,7 +12,7 @@ import { openMajiPulseDb } from '../services/offline/db'
 import { createIdbIncidentOutbox } from '../services/offline/incidentOutbox'
 import type { AuthService, Session, SessionUser } from '../services/session'
 import type { MemberSummary, UserAdminService } from '../services/userAdmin'
-import { FakeMaintenanceService, FakeStaffIncidentService, fakeDashboard } from './fakeStaffServices'
+import { FakeMaintenanceService, FakePatternService, FakeStaffIncidentService, fakeDashboard } from './fakeStaffServices'
 
 export class FakeAuthService implements AuthService {
   private listeners = new Set<(session: Session) => void>()
@@ -144,6 +144,7 @@ export function renderApp(path: string, services: Partial<AppServices> = {}) {
   const all: AppServices = {
     staffIncidents,
     maintenance,
+    patterns: services.patterns ?? new FakePatternService(),
     dashboard:
       services.dashboard ??
       fakeDashboard(

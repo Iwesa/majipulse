@@ -20,6 +20,8 @@ export type StaffDataErrorKind =
   | 'stale'
   /** The requested status change is not allowed (R7.2, R8.2). */
   | 'transition'
+  /** A server feature (for example the AI model) is not available right now. */
+  | 'unavailable'
   | 'unknown'
 
 export class StaffDataError extends Error {

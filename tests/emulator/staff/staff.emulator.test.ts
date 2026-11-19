@@ -6,6 +6,7 @@
 import { readFileSync } from 'node:fs'
 import { initializeTestEnvironment, type RulesTestEnvironment } from '@firebase/rules-unit-testing'
 import { doc, getDoc, serverTimestamp, setDoc, Timestamp, updateDoc, type Firestore } from 'firebase/firestore'
+import type { Functions } from 'firebase/functions'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { incidentStatusSchema, type IncidentStatus } from '../../../src/schemas/incident'
 import {
@@ -13,6 +14,7 @@ import {
   createFirebaseMaintenanceService,
   createFirebaseStaffIncidentService,
 } from '../../../src/services/firebase/staffServices'
+import { createFirebasePatternService } from '../../../src/services/firebase/patternService'
 import type { IncidentQueueFilter } from '../../../src/services/queryPlans'
 
 const PROJECT_ID = 'demo-majipulse'
@@ -229,6 +231,41 @@ describe('maintenance lifecycle (T7.3, AC10)', () => {
     expect(await tasksAs(ADMIN_B).list(scopeOf(ADMIN_B), { status: null })).toEqual([])
     // Another organization cannot link a task to our incident.
     await expect(tasksAs(ADMIN_B).create(scopeOf(ADMIN_B), { incidentId: NEW_1, waterPointId: WP_1 }, { title: 'x', notes: '', assigneeId: null })).rejects.toMatchObject({ kind: 'permission' })
+  })
+})
+
+describe('saved pattern analyses (T8.4, AC2)', () => {
+  const analysis = (organizationId: string, day: number) => ({
+    organizationId, requestedBy: TECH, createdAt: at(day), demo: true, model: 'none',
+    period: { from: at(1), to: at(day) }, scope: {}, analyzedIncidentIds: [], analyzedIncidentCount: 0,
+    insufficientData: true, limitations: ['Based on 0 incident reports.'], insights: [],
+  })
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore() as unknown as Firestore
+      await setDoc(doc(db, 'patternAnalyses', 'pa-old'), analysis(ORG, 10))
+      await setDoc(doc(db, 'patternAnalyses', 'pa-new'), analysis(ORG, 20))
+      await setDoc(doc(db, 'patternAnalyses', 'pa-other'), analysis(ORG_B, 15))
+    })
+  })
+  const patternsAs = (uid: string) => createFirebasePatternService(dbAs(uid), {} as Functions)
+
+  it('staff list their organization’s analyses newest first, validated by the client schema', async () => {
+    for (const uid of [ADMIN, TECH]) {
+      expect((await patternsAs(uid).list(scopeOf(uid))).map((a) => a.id)).toEqual(['pa-new', 'pa-old'])
+    }
+    expect((await patternsAs(TECH).get(scopeOf(TECH), 'pa-new'))?.insufficientData).toBe(true)
+  })
+
+  it('reporters and other organizations are denied', async () => {
+    await expect(patternsAs(REPORTER).list(scopeOf(REPORTER))).rejects.toMatchObject({ kind: 'permission' })
+    await expect(patternsAs(ADMIN_B).get(scopeOf(ADMIN_B), 'pa-new')).rejects.toMatchObject({ kind: 'permission' })
+    expect((await patternsAs(ADMIN_B).list(scopeOf(ADMIN_B))).map((a) => a.id)).toEqual(['pa-other'])
+  })
+
+  it('clients cannot write analyses, even staff', async () => {
+    await expect(setDoc(doc(dbAs(ADMIN), 'patternAnalyses', 'pa-forged'), analysis(ORG, 21))).rejects.toMatchObject({ code: 'permission-denied' })
+    await expect(updateDoc(doc(dbAs(TECH), 'patternAnalyses', 'pa-new'), { insights: [] })).rejects.toMatchObject({ code: 'permission-denied' })
   })
 })
 

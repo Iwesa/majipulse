@@ -2,6 +2,7 @@ import { createContext, useContext } from 'react'
 import { useStore } from 'zustand'
 import type { IncidentExtractor } from '../services/ai/types'
 import type { IncidentOutbox } from '../services/incidents'
+import type { PatternService } from '../services/patterns'
 import type { AuthService } from '../services/session'
 import type { DashboardService, MaintenanceService, StaffIncidentService } from '../services/staff'
 import type { IncidentSyncAdapter } from '../services/sync/types'
@@ -10,6 +11,7 @@ import type { WaterPointCache, WaterPointService } from '../services/waterPoints
 import type { DashboardState, DashboardStore } from '../stores/dashboardStore'
 import type { IncidentState, IncidentStore } from '../stores/incidentStore'
 import type { MaintenanceState, MaintenanceStore } from '../stores/maintenanceStore'
+import type { PatternState, PatternStore } from '../stores/patternStore'
 import type { SessionState, SessionStore } from '../stores/sessionStore'
 import type { StaffIncidentState, StaffIncidentStore } from '../stores/staffIncidentStore'
 import type { SyncState, SyncStore } from '../stores/syncStore'
@@ -26,6 +28,8 @@ export interface AppServices {
   staffIncidents: StaffIncidentService
   maintenance: MaintenanceService
   dashboard: DashboardService
+  /** Cross-incident pattern analysis (Cloud Function) and saved results (Phase 8). */
+  patterns: PatternService
   /** Server sync. Always set in the app; tests leave it out to keep reports local. */
   incidentSync?: IncidentSyncAdapter
   /** AI field suggestions (Firebase AI Logic). Optional: without it, reporting is manual only. */
@@ -41,6 +45,7 @@ export interface ServicesValue {
   staffIncidentStore: StaffIncidentStore
   maintenanceStore: MaintenanceStore
   dashboardStore: DashboardStore
+  patternStore: PatternStore
 }
 
 export const ServicesContext = createContext<ServicesValue | null>(null)
@@ -89,4 +94,8 @@ export function useMaintenance<T>(selector: (state: MaintenanceState) => T): T {
 
 export function useDashboard<T>(selector: (state: DashboardState) => T): T {
   return useStore(useServicesValue().dashboardStore, selector)
+}
+
+export function usePatterns<T>(selector: (state: PatternState) => T): T {
+  return useStore(useServicesValue().patternStore, selector)
 }

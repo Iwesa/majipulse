@@ -10,7 +10,7 @@
 import type { IncidentStatus } from '../schemas/incident'
 import type { MaintenanceStatus } from '../schemas/maintenanceTask'
 
-export type PlannedCollection = 'incidents' | 'maintenanceTasks'
+export type PlannedCollection = 'incidents' | 'maintenanceTasks' | 'patternAnalyses'
 export type SortDirection = 'asc' | 'desc'
 
 export interface QueryPlan {
@@ -64,4 +64,11 @@ export function incidentCountPlan(status: IncidentStatus): QueryPlan {
 
 export function taskCountPlan(status: MaintenanceStatus): QueryPlan {
   return { collection: 'maintenanceTasks', equals: [['status', status]], orderBy: null, limit: null }
+}
+
+export const ANALYSIS_LIST_LIMIT = 20
+
+/** Saved pattern analyses, newest first (T8.4). */
+export function analysisListPlan(): QueryPlan {
+  return { collection: 'patternAnalyses', equals: [], orderBy: ['createdAt', 'desc'], limit: ANALYSIS_LIST_LIMIT }
 }
