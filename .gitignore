@@ -46,3 +46,4 @@ playwright/.cache
 functions/lib
 *.tsbuildinfo
 dist-e2e
+dist-smoke

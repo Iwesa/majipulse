@@ -1,5 +1,5 @@
 import { Menu, X } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { cn } from '../../lib/cn'
 import type { Role } from '../../schemas/roles'
 import { en } from '../../strings/en'
@@ -7,7 +7,7 @@ import { ConnectivityIndicator } from './ConnectivityIndicator'
 import { DemoBanner } from './DemoBanner'
 import { PrimaryNav } from './PrimaryNav'
 
-const MAIN_CONTENT_ID = 'main-content'
+export const MAIN_CONTENT_ID = 'main-content'
 const NAV_ID = 'primary-navigation'
 
 interface AppShellProps {
@@ -26,6 +26,26 @@ interface AppShellProps {
   children: ReactNode
 }
 
+/**
+ * Keeps document.title in step with the page's h1 (WCAG 2.4.2), so each
+ * screen has its own title in tabs, history, and screen readers.
+ */
+function usePageTitle() {
+  useEffect(() => {
+    const main = document.getElementById(MAIN_CONTENT_ID)
+    if (!main) return
+    const update = () => {
+      const heading = main.querySelector('h1')?.textContent?.trim()
+      const title = heading && heading !== en.app.name ? `${heading} – ${en.app.name}` : en.app.name
+      if (document.title !== title) document.title = title
+    }
+    update()
+    const observer = new MutationObserver(update)
+    observer.observe(main, { childList: true, subtree: true, characterData: true })
+    return () => observer.disconnect()
+  }, [])
+}
+
 /** Needs a React Router context when `role` is set (navigation uses NavLink). */
 export function AppShell({
   role,
@@ -38,9 +58,20 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const menuButton = useRef<HTMLButtonElement>(null)
+  usePageTitle()
+
+  // Escape closes the mobile menu and returns focus to its button. Keyboard
+  // events from inside the menu bubble up to this wrapper.
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape' && menuOpen) {
+      setMenuOpen(false)
+      menuButton.current?.focus()
+    }
+  }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900" onKeyDown={onKeyDown}>
       <a
         href={`#${MAIN_CONTENT_ID}`}
         className="sr-only z-50 rounded-md bg-white px-4 py-2 font-medium text-sky-900 focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:outline-3 focus:outline-sky-600"
@@ -52,6 +83,7 @@ export function AppShell({
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3">
           {role && (
             <button
+              ref={menuButton}
               type="button"
               aria-expanded={menuOpen}
               aria-controls={NAV_ID}

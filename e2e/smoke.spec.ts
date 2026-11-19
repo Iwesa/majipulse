@@ -2,11 +2,12 @@ import { expect, test } from '@playwright/test'
 
 // Text is duplicated from src/strings/en.ts because the Node test config does
 // not import app source.
-// The E2E build has no .env.local, so the app shows its configuration error
+// The smoke build blanks the VITE_* settings (playwright.config.ts), so the app shows its configuration error
 // inside the shell. Flows that need Firebase run against the emulators later.
 test('app shell loads in a browser and reports missing configuration', async ({ page }) => {
   await page.goto('/')
-  await expect(page).toHaveTitle('MajiPulse')
+  // The page title follows the page's h1 (WCAG 2.4.2).
+  await expect(page).toHaveTitle('MajiPulse is not configured – MajiPulse')
   await expect(page.getByRole('banner')).toContainText('MajiPulse')
   await expect(page.getByRole('main')).toBeVisible()
   await expect(page.getByRole('alert')).toContainText('MajiPulse is not configured')

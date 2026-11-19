@@ -16,6 +16,7 @@ export function PlaceholderPage({ navKey }: { navKey: NavKey }) {
 export function NotFoundPage() {
   return (
     <EmptyState
+      headingLevel={1}
       title={en.access.notFoundTitle}
       description={en.access.notFoundDescription}
       action={

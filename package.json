@@ -15,6 +15,7 @@
     "test:e2e:emulators": "npm run functions:build && playwright test --config playwright.emulator.config.ts",
     "test:rules": "node scripts/firebase-emulators.mjs emulators:exec --only firestore --project demo-majipulse \"vitest run --config vitest.emulator.config.ts tests/emulator/rules\"",
     "test:emulators": "npm run functions:build && node scripts/firebase-emulators.mjs emulators:exec --only auth,firestore,functions --project demo-majipulse \"vitest run --config vitest.emulator.config.ts\"",
+    "test:hosting": "npm run build && node scripts/firebase-emulators.mjs emulators:exec --only hosting --project demo-majipulse \"vitest run --config vitest.hosting.config.ts\"",
     "emulators": "npm run functions:build && node scripts/firebase-emulators.mjs emulators:start --project demo-majipulse",
     "functions:build": "npm --prefix functions run build",
     "check:build": "node scripts/check-build.mjs"

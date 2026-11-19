@@ -31,7 +31,32 @@ export async function resetAndSeed(): Promise<void> {
 async function warmUpRules(): Promise<void> {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const res = await fetch(`${FIRESTORE}/waterPoints/warm-up`).catch(() => null)
-    if (res && (res.status === 403 || res.status === 404)) return
+    if (res && (res.status === 403 || res.status === 404)) break
+  }
+  // A signed-in, organization-scoped query exercises the member lookup in the
+  // rules (get() on members/{uid}), which is the slowest part on a cold start.
+  const auth = await fetch('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=fake-api-key', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: KWALE_REPORTER, password: PASSWORD, returnSecureToken: true }),
+  }).catch(() => null)
+  const idToken = auth ? ((await auth.json()) as { idToken?: string }).idToken : undefined
+  if (!idToken) return
+  const query = {
+    structuredQuery: {
+      from: [{ collectionId: 'waterPoints' }],
+      where: { fieldFilter: { field: { fieldPath: 'organizationId' }, op: 'EQUAL', value: { stringValue: 'kwale-demo' } } },
+    },
+  }
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const started = Date.now()
+    const res = await fetch(`${FIRESTORE}:runQuery`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(query),
+    }).catch(() => null)
+    // Warm once a scoped query answers quickly.
+    if (res?.ok && Date.now() - started < 2_000) return
   }
 }
 

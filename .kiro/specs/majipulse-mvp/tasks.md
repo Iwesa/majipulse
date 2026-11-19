@@ -6,7 +6,7 @@ Markers: **[approval]** needs your approval (dependency, console, or billing act
 
 ## Phase P: Platform prerequisites (checklist, runs alongside Phase 0 and 1)
 
-- [ ] **TP.1 Platform checklist document.** Write `docs/platform-checklist.md` covering: Blaze plan and budget alert, Firebase project ID, Auth email/password enabled, Firestore location, Functions 2nd gen region and Node runtime, Vertex AI API enabled and model available in the region, function service account IAM role, AI Logic setup (Gemini Developer API), App Check web provider and debug tokens. **[verify]** each item against current docs.
+- [x] **TP.1 Platform checklist document.** Write `docs/platform-checklist.md` covering: Blaze plan and budget alert, Firebase project ID, Auth email/password enabled, Firestore location, Functions 2nd gen region and Node runtime, Vertex AI API enabled and model available in the region, function service account IAM role, AI Logic setup (Gemini Developer API), App Check web provider and debug tokens. **[verify]** each item against current docs.
   *Test:* you review the document.
 - [ ] **TP.2 Console setup.** You complete the checklist items in the console. **[user]**
   *Test:* checklist ticked. Blocks Phases 2 (deploy only), 6 (real calls), 8 and 9. Emulator work does not wait for it.
@@ -164,9 +164,9 @@ Markers: **[approval]** needs your approval (dependency, console, or billing act
 
 - [ ] **T9.1 App Check enforcement.** Register provider, enforce for Firestore and Functions, confirm AI Logic enforcement, verify the app works. **[user][verify]**
   *Test:* manual checklist, request without token rejected. Refs: S5.
-- [ ] **T9.2 Accessibility pass.**
+- [x] **T9.2 Accessibility pass.**
   *Test:* Playwright checks and manual checklist at 360px and 1280px. Refs: AC16.
-- [ ] **T9.3 Hosting and deploy config.** SPA rewrite, rules and indexes deploy, `.firebaserc` with placeholder.
+- [x] **T9.3 Hosting and deploy config.** SPA rewrite, rules and indexes deploy, `.firebaserc` with placeholder.
   *Test:* hosting emulator smoke test.
 - [ ] **T9.4 Demo deployment.** Deploy, bootstrap, seed (with your confirmation), walk through all acceptance criteria.
   *Test:* results in `docs/acceptance-results.md`.

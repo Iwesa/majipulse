@@ -7,6 +7,18 @@ const BASE_URL = `http://localhost:${PORT}`
 // Set PLAYWRIGHT_CHANNEL=msedge (or chrome) to use a browser already installed on the machine.
 const channel = process.env.PLAYWRIGHT_CHANNEL
 
+const UNCONFIGURED = [
+  'VITE_FIREBASE_API_KEY',
+  'VITE_FIREBASE_AUTH_DOMAIN',
+  'VITE_FIREBASE_PROJECT_ID',
+  'VITE_FIREBASE_STORAGE_BUCKET',
+  'VITE_FIREBASE_MESSAGING_SENDER_ID',
+  'VITE_FIREBASE_APP_ID',
+  'VITE_APPCHECK_SITE_KEY',
+  'VITE_USE_EMULATORS',
+  'VITE_APPCHECK_DEBUG_TOKEN',
+]
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -24,9 +36,13 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npm run build && npm run preview -- --port ${PORT} --strictPort`,
+    // Own output folder, so it never replaces the `dist` that Hosting deploys.
+    command: `npx vite build --outDir dist-smoke --emptyOutDir && npx vite preview --outDir dist-smoke --port ${PORT} --strictPort`,
     url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120_000,
+    // These tests check the "not configured" screen. Empty values win over any
+    // .env.local, so the result does not depend on the developer's machine.
+    env: Object.fromEntries(UNCONFIGURED.map((key) => [key, ''])),
   },
 })

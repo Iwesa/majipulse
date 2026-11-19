@@ -8,7 +8,7 @@ export function ConfigErrorPage() {
   const online = useOnlineStatus()
   return (
     <AppShell online={online}>
-      <ErrorState title={en.config.title} message={en.config.description} />
+      <ErrorState title={en.config.title} message={en.config.description} headingLevel={1} />
     </AppShell>
   )
 }

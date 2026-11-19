@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useIncidents, useSync } from '../../app/servicesContext'
 import type { LocalIncidentRecord } from '../../schemas/localIncident'
 import type { SessionScope } from '../../schemas/roles'
 import { incidentOutboxErrorKind, type IncidentOutboxErrorKind } from '../../services/incidents'
 import { canRetryOnLatest } from '../../services/sync/transitions'
 import { en } from '../../strings/en'
-import { Alert, Button } from '../ui'
+import { Alert, Badge, Button } from '../ui'
 
 interface ConflictReviewProps {
   record: LocalIncidentRecord
@@ -26,6 +26,13 @@ export function ConflictReview({ record, scope, waterPointName, onResolved }: Co
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState<IncidentOutboxErrorKind | null>(null)
+  const discardButton = useRef<HTMLButtonElement>(null)
+  const wasConfirming = useRef(false)
+  // Closing the confirmation returns focus to the button that opened it.
+  useEffect(() => {
+    if (wasConfirming.current && !confirming) discardButton.current?.focus()
+    wasConfirming.current = confirming
+  }, [confirming])
   const server = record.conflictServerSnapshot
   if (!server) return null
   const retryAllowed = canRetryOnLatest(record)
@@ -81,7 +88,11 @@ export function ConflictReview({ record, scope, waterPointName, onResolved }: Co
             {rows.map(([label, mine, theirs]) => (
               <tr key={label} className={mine !== theirs ? 'bg-amber-50' : undefined}>
                 <th scope="row" className="border border-slate-300 p-2 font-medium">
-                  {label}
+                  <span className="flex flex-wrap items-center gap-2">
+                    {label}
+                    {/* Text, not only the row color, shows which values differ. */}
+                    {mine !== theirs && <Badge tone="warning">{en.conflict.different}</Badge>}
+                  </span>
                 </th>
                 <td className="border border-slate-300 p-2 whitespace-pre-wrap">{mine}</td>
                 <td className="border border-slate-300 p-2 whitespace-pre-wrap">{theirs}</td>
@@ -119,7 +130,7 @@ export function ConflictReview({ record, scope, waterPointName, onResolved }: Co
         </div>
       ) : (
         <div className="flex flex-col gap-1">
-          <Button variant="secondary" disabled={busy} className="self-start" onClick={() => setConfirming(true)}>
+          <Button ref={discardButton} variant="secondary" disabled={busy} className="self-start" onClick={() => setConfirming(true)}>
             {en.conflict.discard}
           </Button>
           <p className="text-sm text-amber-950">{en.conflict.discardHelp}</p>

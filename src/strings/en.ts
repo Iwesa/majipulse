@@ -408,6 +408,7 @@ export const en = {
     yours: 'Your version (not sent)',
     server: 'Version on the server',
     status: 'Report status',
+    different: 'Different',
     retryOnLatest: 'Send my version',
     retryHelp: 'Sends your version in place of the server version.',
     triagedNote: 'Your organization has already started handling this report, so your edit cannot be sent. You can keep it visible here or discard it.',

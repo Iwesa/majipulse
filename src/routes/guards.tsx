@@ -1,10 +1,10 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useIncidents, useSession, useSync } from '../app/servicesContext'
 import { useIncidentSync } from '../app/useIncidentSync'
 import { useWaterPointRefresh } from '../app/useWaterPointRefresh'
 import { SyncIndicator } from '../components/incidents/SyncIndicator'
-import { AppShell } from '../components/layout/AppShell'
+import { AppShell, MAIN_CONTENT_ID } from '../components/layout/AppShell'
 import { Button, EmptyState, Spinner } from '../components/ui'
 import { useOnlineStatus } from '../lib/useOnlineStatus'
 import type { Role } from '../schemas/roles'
@@ -40,6 +40,7 @@ export function RequireSession() {
     return (
       <AppShell online={online}>
         <EmptyState
+          headingLevel={1}
           title={en.access.noAccessTitle}
           description={en.access[session.reason]}
           action={
@@ -69,6 +70,7 @@ export function RequireSession() {
         </>
       }
     >
+      <RouteFocus />
       <WaterPointRefresh organizationId={user.organizationId} ownerUid={user.uid} />
       <IncidentSession key={`${user.organizationId}|${user.uid}`} organizationId={user.organizationId} ownerUid={user.uid} />
       <Outlet />
@@ -102,6 +104,23 @@ function SyncRunner({ organizationId, ownerUid }: { organizationId: string; owne
   return null
 }
 
+/**
+ * Renders nothing. After an in-app navigation, moves focus to the main
+ * content so keyboard and screen reader users start at the new page instead
+ * of the link they used (the page title updates at the same time). Not on the
+ * first render, so the skip link stays first in the tab order on load.
+ */
+function RouteFocus() {
+  const { pathname } = useLocation()
+  const previous = useRef(pathname)
+  useEffect(() => {
+    if (previous.current === pathname) return
+    previous.current = pathname
+    document.getElementById(MAIN_CONTENT_ID)?.focus({ preventScroll: false })
+  }, [pathname])
+  return null
+}
+
 /** Renders nothing; keeps the water point cache fresh for the signed-in user. */
 function WaterPointRefresh({ organizationId, ownerUid }: { organizationId: string; ownerUid: string }) {
   useWaterPointRefresh(organizationId, ownerUid)
@@ -113,7 +132,7 @@ export function RequireRole({ roles }: { roles: readonly Role[] }) {
   const session = useSession((s) => s.session)
   if (session.status !== 'signedIn') return null
   if (!roles.includes(session.user.role)) {
-    return <EmptyState title={en.access.deniedTitle} description={en.access.deniedDescription} />
+    return <EmptyState headingLevel={1} title={en.access.deniedTitle} description={en.access.deniedDescription} />
   }
   return <Outlet />
 }
