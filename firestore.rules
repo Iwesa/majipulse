@@ -293,9 +293,13 @@ service cloud.firestore {
         && member.data.role in ['administrator', 'technician'];
     }
 
-    function incidentValid(incidentId) {
+    // A linked incident must be in the caller's organization and on the
+    // task's water point (R8.1).
+    function incidentValid(incidentId, waterPointId) {
       return incidentId == null
-        || (docIn('incidents', incidentId) != null && docIn('incidents', incidentId).data.organizationId == orgId());
+        || (docIn('incidents', incidentId) != null
+          && docIn('incidents', incidentId).data.organizationId == orgId()
+          && docIn('incidents', incidentId).data.waterPointId == waterPointId);
     }
 
     function taskTransition(from, to) {
@@ -315,7 +319,7 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time
         && request.resource.data.demo == false
         && waterPointInMyOrg(request.resource.data.waterPointId)
-        && incidentValid(request.resource.data.incidentId)
+        && incidentValid(request.resource.data.incidentId, request.resource.data.waterPointId)
         && assigneeValid(request.resource.data.assigneeId);
 
       allow update: if isMember() && isStaff()

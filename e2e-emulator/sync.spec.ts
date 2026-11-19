@@ -71,7 +71,8 @@ test('account switching keeps unsent reports per user and sends them when the ow
   await expect(page.getByRole('heading', { name: 'No reports yet' })).toBeVisible()
   await expect(page.getByText('Saved by Kwale reporter while offline', { exact: false })).toHaveCount(0)
   await page.goto(`/reports/${id}`)
-  await expect(page.getByRole('heading', { name: 'Report not found' })).toBeVisible()
+  // A full reload restores the session from the Auth and Firestore emulators, which can be slow, like sign-in.
+  await expect(page.getByRole('heading', { name: 'Report not found' })).toBeVisible({ timeout: 30_000 })
   expect(await readIncident(id)).toBeNull()
   await signOut(page)
 

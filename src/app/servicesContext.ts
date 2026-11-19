@@ -3,11 +3,15 @@ import { useStore } from 'zustand'
 import type { IncidentExtractor } from '../services/ai/types'
 import type { IncidentOutbox } from '../services/incidents'
 import type { AuthService } from '../services/session'
+import type { DashboardService, MaintenanceService, StaffIncidentService } from '../services/staff'
 import type { IncidentSyncAdapter } from '../services/sync/types'
 import type { UserAdminService } from '../services/userAdmin'
 import type { WaterPointCache, WaterPointService } from '../services/waterPoints'
+import type { DashboardState, DashboardStore } from '../stores/dashboardStore'
 import type { IncidentState, IncidentStore } from '../stores/incidentStore'
+import type { MaintenanceState, MaintenanceStore } from '../stores/maintenanceStore'
 import type { SessionState, SessionStore } from '../stores/sessionStore'
+import type { StaffIncidentState, StaffIncidentStore } from '../stores/staffIncidentStore'
 import type { SyncState, SyncStore } from '../stores/syncStore'
 import type { WaterPointState, WaterPointStore } from '../stores/waterPointStore'
 
@@ -18,6 +22,10 @@ export interface AppServices {
   waterPoints: WaterPointService
   waterPointCache: WaterPointCache
   incidentOutbox: IncidentOutbox
+  /** Staff triage, maintenance, and dashboard counts (Phase 7). Online only. */
+  staffIncidents: StaffIncidentService
+  maintenance: MaintenanceService
+  dashboard: DashboardService
   /** Server sync. Always set in the app; tests leave it out to keep reports local. */
   incidentSync?: IncidentSyncAdapter
   /** AI field suggestions (Firebase AI Logic). Optional: without it, reporting is manual only. */
@@ -30,6 +38,9 @@ export interface ServicesValue {
   waterPointStore: WaterPointStore
   incidentStore: IncidentStore
   syncStore: SyncStore
+  staffIncidentStore: StaffIncidentStore
+  maintenanceStore: MaintenanceStore
+  dashboardStore: DashboardStore
 }
 
 export const ServicesContext = createContext<ServicesValue | null>(null)
@@ -66,4 +77,16 @@ export function useIncidentStoreApi(): IncidentStore {
 
 export function useSyncStoreApi(): SyncStore {
   return useServicesValue().syncStore
+}
+
+export function useStaffIncidents<T>(selector: (state: StaffIncidentState) => T): T {
+  return useStore(useServicesValue().staffIncidentStore, selector)
+}
+
+export function useMaintenance<T>(selector: (state: MaintenanceState) => T): T {
+  return useStore(useServicesValue().maintenanceStore, selector)
+}
+
+export function useDashboard<T>(selector: (state: DashboardState) => T): T {
+  return useStore(useServicesValue().dashboardStore, selector)
 }

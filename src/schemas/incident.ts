@@ -33,6 +33,9 @@ export const INCIDENT_STATUS_TRANSITIONS = {
 export const isAllowedIncidentTransition = (from: IncidentStatus, to: IncidentStatus): boolean =>
   (INCIDENT_STATUS_TRANSITIONS[from] as readonly IncidentStatus[]).includes(to)
 
+/** The single next status in the triage flow (R7.2), or null when resolved. */
+export const nextIncidentStatus = (status: IncidentStatus): IncidentStatus | null =>
+  INCIDENT_STATUS_TRANSITIONS[status][0] ?? null
 export const DESCRIPTION_MAX = 2000
 export const LOCATION_NOTE_MAX = 300
 

@@ -140,13 +140,13 @@ Markers: **[approval]** needs your approval (dependency, console, or billing act
 
 ## Phase 7: Triage and maintenance
 
-- [ ] **T7.1 Incident list.** Org-scoped query, filters, indexes.
+- [x] **T7.1 Incident list.** Org-scoped query, filters, indexes.
   *Test:* store, component, and emulator query tests. Refs: R7.1.
-- [ ] **T7.2 Incident detail and triage.** Confirmed versus AI-suggested values, status transitions.
+- [x] **T7.2 Incident detail and triage.** Confirmed versus AI-suggested values, status transitions.
   *Test:* transition unit tests, component tests. Refs: R7.2.
-- [ ] **T7.3 Maintenance tasks.** Create from incident, list, detail, assign, status.
+- [x] **T7.3 Maintenance tasks.** Create from incident, list, detail, assign, status.
   *Test:* store, component, rules tests. Refs: R8, AC10.
-- [ ] **T7.4 Dashboard.** Role-based counts and sync summary.
+- [x] **T7.4 Dashboard.** Role-based counts and sync summary.
   *Test:* component tests per role.
 
 ## Phase 8: Pattern analysis (D3 approved; real calls wait for TP.2)

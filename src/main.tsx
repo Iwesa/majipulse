@@ -8,6 +8,7 @@ import { initFirebase } from './services/firebase/app'
 import { createFirebaseAuthService } from './services/firebase/authService'
 import { createFirestoreIncidentSyncAdapter } from './services/firebase/incidentSyncAdapter'
 import { ConfigError, loadAppConfig } from './services/firebase/config'
+import { createFirebaseDashboardService, createFirebaseMaintenanceService, createFirebaseStaffIncidentService } from './services/firebase/staffServices'
 import { createFirebaseUserAdminService } from './services/firebase/userAdminService'
 import { createFirebaseWaterPointService } from './services/firebase/waterPointService'
 import { openMajiPulseDb } from './services/offline/db'
@@ -31,6 +32,9 @@ try {
     waterPoints: createFirebaseWaterPointService(firebase.db),
     waterPointCache: createIdbWaterPointCache(database),
     incidentOutbox: createIdbIncidentOutbox(database),
+    staffIncidents: createFirebaseStaffIncidentService(firebase.db),
+    maintenance: createFirebaseMaintenanceService(firebase.db),
+    dashboard: createFirebaseDashboardService(firebase.db),
     incidentSync: createFirestoreIncidentSyncAdapter(firebase.db),
     incidentExtractor: createFirebaseIncidentExtractor(firebase.app),
   }

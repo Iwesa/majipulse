@@ -1,6 +1,9 @@
 import { Route, Routes } from 'react-router-dom'
 import { NAV_ITEMS } from '../components/layout/navigation'
 import { HomePage } from '../pages/HomePage'
+import { IncidentDetailPage } from '../pages/incidents/IncidentDetailPage'
+import { IncidentQueuePage } from '../pages/incidents/IncidentQueuePage'
+import { MaintenanceListPage, MaintenanceTaskPage, NewMaintenanceTaskPage } from '../pages/maintenance/MaintenancePages'
 import { EditReportPage, NewReportPage } from '../pages/reports/ReportFormPages'
 import { MyReportsPage, ReportDetailPage } from '../pages/reports/ReportListPages'
 import { NotFoundPage, PlaceholderPage } from '../pages/StatusPages'
@@ -21,6 +24,8 @@ const PAGES = {
   newReport: NewReportPage,
   myReports: MyReportsPage,
   syncStatus: SyncStatusPage,
+  incidents: IncidentQueuePage,
+  maintenance: MaintenanceListPage,
 } as const
 
 /** There is deliberately no sign-up route (R1.4). */
@@ -40,6 +45,9 @@ export function AppRoutes() {
         <Route element={<RequireRole roles={STAFF_ROLES} />}>
           <Route path="/water-points/new" element={<WaterPointFormPage mode="create" />} />
           <Route path="/water-points/:waterPointId/edit" element={<WaterPointFormPage mode="edit" />} />
+          <Route path="/incidents/:incidentId" element={<IncidentDetailPage />} />
+          <Route path="/maintenance/new" element={<NewMaintenanceTaskPage />} />
+          <Route path="/maintenance/:taskId" element={<MaintenanceTaskPage />} />
         </Route>
         <Route path="/water-points/:waterPointId" element={<WaterPointDetailPage />} />
         {/* A user's own local reports: every role. */}

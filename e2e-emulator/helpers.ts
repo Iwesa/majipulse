@@ -18,6 +18,21 @@ export async function resetAndSeed(): Promise<void> {
     env: { ...process.env, MAJIPULSE_DEMO_PASSWORD: PASSWORD },
     stdio: 'inherit',
   })
+  await warmUpRules()
+}
+
+/**
+ * The first rules-evaluated request against a cold Firestore emulator can take
+ * over 10 seconds. The web SDK then treats the backend as unreachable and goes
+ * offline, so the app's first read fails. An unauthenticated read (denied by
+ * the rules) makes the emulator load and compile the rules before any browser
+ * test starts.
+ */
+async function warmUpRules(): Promise<void> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const res = await fetch(`${FIRESTORE}/waterPoints/warm-up`).catch(() => null)
+    if (res && (res.status === 403 || res.status === 404)) return
+  }
 }
 
 export async function signIn(page: Page, email: string): Promise<void> {
@@ -37,7 +52,8 @@ export async function signOut(page: Page): Promise<void> {
 /** Opens New report online so the water point list is saved on this device. */
 export async function openNewReport(page: Page): Promise<void> {
   await page.getByRole('navigation').getByRole('link', { name: 'New report' }).click()
-  await expect(page.getByLabel(/^Water point/).locator('option', { hasText: 'Mwamanga Borehole (fictional)' })).toHaveCount(1)
+  // Like the first sign-in, the first water point read against a cold emulator can be slow.
+  await expect(page.getByLabel(/^Water point/).locator('option', { hasText: 'Mwamanga Borehole (fictional)' })).toHaveCount(1, { timeout: 30_000 })
 }
 
 export async function fillReport(page: Page, description: string): Promise<void> {
@@ -100,4 +116,12 @@ export async function triageOnServer(id: string): Promise<void> {
     }),
   })
   if (!res.ok) throw new Error(`triage failed: ${res.status}`)
+}
+
+/** Reads any document from the emulator (admin, bypassing rules). Null if missing. */
+export async function readDocument(collectionPath: string, id: string): Promise<IncidentFields | null> {
+  const res = await fetch(`${FIRESTORE}/${collectionPath}/${encodeURIComponent(id)}`, { headers: OWNER })
+  if (res.status === 404) return null
+  const body = (await res.json()) as { fields?: IncidentFields }
+  return body.fields ?? null
 }

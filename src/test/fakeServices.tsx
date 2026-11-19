@@ -12,6 +12,7 @@ import { openMajiPulseDb } from '../services/offline/db'
 import { createIdbIncidentOutbox } from '../services/offline/incidentOutbox'
 import type { AuthService, Session, SessionUser } from '../services/session'
 import type { MemberSummary, UserAdminService } from '../services/userAdmin'
+import { FakeMaintenanceService, FakeStaffIncidentService, fakeDashboard } from './fakeStaffServices'
 
 export class FakeAuthService implements AuthService {
   private listeners = new Set<(session: Session) => void>()
@@ -138,7 +139,17 @@ export class FakeWaterPointCache implements WaterPointCache {
 }
 
 export function renderApp(path: string, services: Partial<AppServices> = {}) {
+  const staffIncidents = services.staffIncidents ?? new FakeStaffIncidentService()
+  const maintenance = services.maintenance ?? new FakeMaintenanceService()
   const all: AppServices = {
+    staffIncidents,
+    maintenance,
+    dashboard:
+      services.dashboard ??
+      fakeDashboard(
+        () => (staffIncidents instanceof FakeStaffIncidentService ? staffIncidents.incidents : []),
+        () => (maintenance instanceof FakeMaintenanceService ? maintenance.tasks : []),
+      ),
     auth: services.auth ?? new FakeAuthService(),
     userAdmin: services.userAdmin ?? fakeUserAdmin(),
     waterPoints: services.waterPoints ?? new FakeWaterPointService(),
